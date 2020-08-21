@@ -16,7 +16,7 @@ entries:
       title: Plots
       url: /plots
     - output: web,pdf
-      title: Utility functionality
+      title: Utilities
       url: /utils
     output: web
     title: ridge_reliability

@@ -5,8 +5,8 @@ title: Plots
 keywords: fastai
 sidebar: home_sidebar
 
-summary: "API details."
-description: "API details."
+summary: "This module defines functions for plotting the ridge reliability and standard confidence reliability diagrams. Both types of diagrams can be plotted with one figure per class (class-wise) or one aggregated figure for the classifier."
+description: "This module defines functions for plotting the ridge reliability and standard confidence reliability diagrams. Both types of diagrams can be plotted with one figure per class (class-wise) or one aggregated figure for the classifier."
 ---
 <!--
 
@@ -58,8 +58,16 @@ description: "API details."
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="standard_reliability_diagram" class="doc_header"><code>standard_reliability_diagram</code><a href="https://github.com/MaximLippeveld/ridge_reliability/tree/master/ridge_reliability/plots.py#L53" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>standard_reliability_diagram</code>(<strong><code>y_probs</code></strong>, <strong><code>y_preds</code></strong>, <strong><code>y_true</code></strong>, <strong><code>axes</code></strong>, <strong><code>bins</code></strong>=<em><code>'fd'</code></em>)</p>
+<h4 id="confidence_reliability_diagram" class="doc_header"><code>confidence_reliability_diagram</code><a href="https://github.com/MaximLippeveld/ridge_reliability/tree/master/ridge_reliability/plots.py#L64" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>confidence_reliability_diagram</code>(<strong><code>y_probs</code></strong>:<code>ndarray</code>, <strong><code>y_preds</code></strong>:<code>ndarray</code>, <strong><code>y_true</code></strong>:<code>ndarray</code>, <strong><code>ax</code></strong>:<code>Axes</code>, <strong><code>bins</code></strong>=<em><code>'fd'</code></em>, <strong><code>balanced</code></strong>:<code>bool</code>=<em><code>False</code></em>)</p>
 </blockquote>
+<p>Plot a confidence reliability diagram.</p>
+<p>Arguments:
+y_probs -- Array containing prediction confidences (shape (N,) with N number of instances, in [0, 1])
+y_preds -- Array containing predicted labels (shape (N,))
+y_true -- Array containing true labels (shape (N,))
+ax -- Axes on which the diagram will be plotted (will be decorated by <code>_decorate_ax</code>)
+bins -- Description of amount of bins in which to divide prediction confidences (see <code>numpy.histogram_bin_edges</code> for options)
+balanced -- Flag for using balanced accuracy score</p>
 
 </div>
 
@@ -82,8 +90,16 @@ description: "API details."
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="class_wise_standard_reliability_diagram" class="doc_header"><code>class_wise_standard_reliability_diagram</code><a href="https://github.com/MaximLippeveld/ridge_reliability/tree/master/ridge_reliability/plots.py#L82" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>class_wise_standard_reliability_diagram</code>(<strong><code>y_probs</code></strong>, <strong><code>y_preds</code></strong>, <strong><code>y_true</code></strong>, <strong><code>axes</code></strong>, <strong><code>bins</code></strong>=<em><code>'fd'</code></em>)</p>
+<h4 id="class_wise_standard_reliability_diagram" class="doc_header"><code>class_wise_standard_reliability_diagram</code><a href="https://github.com/MaximLippeveld/ridge_reliability/tree/master/ridge_reliability/plots.py#L103" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>class_wise_standard_reliability_diagram</code>(<strong><code>y_probs</code></strong>, <strong><code>y_preds</code></strong>, <strong><code>y_true</code></strong>, <strong><code>axes</code></strong>, <strong><code>bins</code></strong>=<em><code>'fd'</code></em>, <strong><code>balanced</code></strong>=<em><code>True</code></em>)</p>
 </blockquote>
+<p>Plot a class-wise confidence reliability diagram.</p>
+<p>Arguments:
+y_probs -- Array containing prediction confidences (shape (N,) with N number of instances, in [0, 1])
+y_preds -- Array containing predicted labels (shape (N,))
+y_true -- Array containing true labels (shape (N,))
+ax -- Axes on which the diagram will be plotted (will be decorated by <code>_decorate_ax</code>)
+bins -- Description of amount of bins in which to divide prediction confidences (see <code>numpy.histogram_bin_edges</code> for options)
+balanced -- Flag for using balanced accuracy score</p>
 
 </div>
 
@@ -119,7 +135,7 @@ description: "API details."
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="ridge_reliability_diagram" class="doc_header"><code>ridge_reliability_diagram</code><a href="https://github.com/MaximLippeveld/ridge_reliability/tree/master/ridge_reliability/plots.py#L173" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>ridge_reliability_diagram</code>(<strong><code>y_probs</code></strong>, <strong><code>y_preds</code></strong>, <strong><code>y_true</code></strong>, <strong><code>ax</code></strong>, <strong><code>bins</code></strong>=<em><code>'fd'</code></em>, <strong><code>plot_densities</code></strong>=<em><code>True</code></em>, <strong><code>exact</code></strong>=<em><code>False</code></em>)</p>
+<h4 id="ridge_reliability_diagram" class="doc_header"><code>ridge_reliability_diagram</code><a href="https://github.com/MaximLippeveld/ridge_reliability/tree/master/ridge_reliability/plots.py#L207" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>ridge_reliability_diagram</code>(<strong><code>y_probs</code></strong>, <strong><code>y_preds</code></strong>, <strong><code>y_true</code></strong>, <strong><code>ax</code></strong>, <strong><code>bins</code></strong>=<em><code>'fd'</code></em>, <strong><code>plot_densities</code></strong>=<em><code>True</code></em>, <strong><code>exact</code></strong>=<em><code>False</code></em>)</p>
 </blockquote>
 
 </div>
@@ -143,7 +159,7 @@ description: "API details."
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="class_wise_ridge_reliability_diagram" class="doc_header"><code>class_wise_ridge_reliability_diagram</code><a href="https://github.com/MaximLippeveld/ridge_reliability/tree/master/ridge_reliability/plots.py#L207" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>class_wise_ridge_reliability_diagram</code>(<strong><code>y_probs</code></strong>, <strong><code>y_preds</code></strong>, <strong><code>y_true</code></strong>, <strong><code>axes</code></strong>, <strong><code>bins</code></strong>=<em><code>'fd'</code></em>, <strong><code>plot_densities</code></strong>=<em><code>True</code></em>)</p>
+<h4 id="class_wise_ridge_reliability_diagram" class="doc_header"><code>class_wise_ridge_reliability_diagram</code><a href="https://github.com/MaximLippeveld/ridge_reliability/tree/master/ridge_reliability/plots.py#L244" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>class_wise_ridge_reliability_diagram</code>(<strong><code>y_probs</code></strong>, <strong><code>y_preds</code></strong>, <strong><code>y_true</code></strong>, <strong><code>axes</code></strong>, <strong><code>bins</code></strong>=<em><code>'fd'</code></em>, <strong><code>plot_densities</code></strong>=<em><code>True</code></em>)</p>
 </blockquote>
 
 </div>

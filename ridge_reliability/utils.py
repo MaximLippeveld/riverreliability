@@ -6,34 +6,38 @@ __all__ = ['freedman_diaconis', 'get_bin_indices', 'binning']
 
 import numpy as np
 import scipy.stats
+from typing import Callable
 
 # Cell
 
-def freedman_diaconis(values):
+def freedman_diaconis(values:np.array):
     """Compute the number of bins according to the Freedman-Diaconis rule.
 
     Parameters:
-    values (np.array): values of the histogram
+    values -- Values of the histogram
 
     Returns:
-    bins (int): number of bins to use for the histogram of values
+    bins (int) -- Number of bins to use for the histogram of values
     """
 
     hist, bin_edges = np.histogram(values, bins='fd')
     return len(bin_edges) - 1
 
 
-def get_bin_indices(y_probs, bins='fd', lower=None, upper=None, return_edges=False):
+def get_bin_indices(y_probs:np.array, bins='fd', lower:float=None, upper:float=None, return_edges:bool=False):
     """Compute a function across.
 
     Parameters:
-    y_probs (np.array): predicted class probabilities
-    bins (int or sequence of scalars or str, optional): number of bins
-    return_edges (bool): return the edges used for the binning
+    y_probs -- Predicted class probabilities
+    bins -- Number of bins (see `np.histogram_bin_edges` for options)
+    return_edges -- Return the edges used for the binning
+    lower -- Lower bound of confidence values
+    upper -- Upper bound of confidence values
+    return_edges -- Set to return identified edges
 
     Returns:
-    bin_indices (np.array): array that maps instances to bins
-    edges (np.array): bin edges if return_edges is True
+    bin_indices (np.array) -- Array that maps instances to bins
+    edges (np.array) -- Bin edges if return_edges is True
 
     """
 
@@ -61,18 +65,18 @@ def get_bin_indices(y_probs, bins='fd', lower=None, upper=None, return_edges=Fal
     return bin_indices
 
 
-def binning(y_probs, y_preds, y_true, bin_indices, bin_func):
+def binning(y_probs:np.array, y_preds:np.array, y_true:np.array, bin_indices:np.array, bin_func:Callable):
     """Compute a function across bins of confidence levels.
 
     Parameters:
-    y_probs (np.array): predicted class probabilities
-    y_preds (np.array): predicted class labels
-    y_true (np.array): true class labels
-    bin_indices (np.array): array that maps instances to bins (as obtained by `utils.get_bin_indices`)
-    bin_func (lambda): function to compute for each bin
+    y_probs -- Predicted class probabilities
+    y_preds -- Predicted class labels
+    y_true -- True class labels
+    bin_indices -- Array that maps instances to bins (as obtained by `utils.get_bin_indices`)
+    bin_func -- Function to compute for each bin
 
     Returns:
-    result (float): result of the computation across bins
+    result (float) -- Result of the computation across bins
 
     """
 

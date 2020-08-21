@@ -1,5 +1,5 @@
 # Ridge reliability
-> Summary description here.
+> The ridge-reliability package provides reliability diagrams and metrics. These include the ridge reliability diagram.
 
 
 ## Install
