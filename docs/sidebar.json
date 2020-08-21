@@ -1,6 +1,8 @@
 {
   "ridge_reliability": {
     "Overview": "/",
-    "module name here": "/core"
+    "Metrics": "/metrics",
+    "Plots": "/plots",
+    "Utility functionality": "/utils"
   }
 }

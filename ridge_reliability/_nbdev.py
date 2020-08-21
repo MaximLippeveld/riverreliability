@@ -2,9 +2,13 @@
 
 __all__ = ["index", "modules", "custom_doc_links", "git_url"]
 
-index = {}
+index = {"freedman_diaconis": "utils.ipynb",
+         "get_bin_indices": "utils.ipynb",
+         "binning": "utils.ipynb"}
 
-modules = []
+modules = ["metrics.py",
+           "plots.py",
+           "utils.py"]
 
 doc_url = "https://MaximLippeveld.github.io/ridge_reliability/"
 

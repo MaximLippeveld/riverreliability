@@ -10,8 +10,14 @@ entries:
       title: Overview
       url: /
     - output: web,pdf
-      title: module name here
-      url: /core
+      title: Metrics
+      url: /metrics
+    - output: web,pdf
+      title: Plots
+      url: /plots
+    - output: web,pdf
+      title: Utility functionality
+      url: /utils
     output: web
     title: ridge_reliability
   output: web
