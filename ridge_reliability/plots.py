@@ -19,20 +19,17 @@ from sklearn.preprocessing import label_binarize
 
 # Internal Cell
 
-def decorate_ax(ax, first_of_row, xlabel, ylabel, title):
+def _decorate_ax(ax):
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-    ax.set_title(title)
     plt.setp(ax.spines.values(), color=cm.tab20c(18))
     plt.setp([ax.get_xticklines(), ax.get_yticklines()], color=cm.tab20c(18))
-
-    ax.set_xlabel(xlabel)
-    if first_of_row:
-        ax.set_ylabel(ylabel)
 
 # Internal Cell
 
 def plot_bar_diagram(edges, bin_accuracies, bin_confidences, ax):
+
+    _decorate_ax(ax)
 
     ax.plot([0,1], [0,1], linestyle="--", color=cm.tab20c(16))
 
@@ -50,13 +47,17 @@ def plot_bar_diagram(edges, bin_accuracies, bin_confidences, ax):
 
 # Cell
 
-def standard_reliability_diagram(y_probs, y_preds, y_true, axes, bins="fd"):
+def standard_reliability_diagram(y_probs, y_preds, y_true, ax, bins="fd", balanced=False):
     bin_indices, edges = utils.get_bin_indices(y_probs, bins, 0.0, 1.0, return_edges=True)
     unique_bin_indices = sorted(np.unique(bin_indices))
 
     mean_confidences = np.full((len(edges)-1,), dtype=np.float32, fill_value=np.nan)
-    bin_accuracy = np.full((len(edges)-1,), dtype=np.float32, fill_value=np.nan)
-    bin_bal_accuracy = np.full((len(edges)-1,), dtype=np.float32, fill_value=np.nan)
+    bin_metric = np.full((len(edges)-1,), dtype=np.float32, fill_value=np.nan)
+
+    metric = balanced_accuracy_score if balanced else accuracy_score
+
+    ax.set_xlabel("Confidence level")
+    ax.set_ylabel("Balanced accuracy" if balanced else "Accuracy")
 
     for bin_idx in unique_bin_indices:
         selector = bin_indices == bin_idx
@@ -69,14 +70,9 @@ def standard_reliability_diagram(y_probs, y_preds, y_true, axes, bins="fd"):
             continue
 
         mean_confidences[bin_idx-1] = np.mean(y_probs[selector])
-        bin_accuracy[bin_idx-1] = accuracy_score(y_true[selector], y_preds[selector])
-        bin_bal_accuracy[bin_idx-1] = balanced_accuracy_score(y_true[selector], y_preds[selector])
+        bin_metric[bin_idx-1] = metric(y_true[selector], y_preds[selector])
 
-    if type(axes) is np.ndarray:
-        plot_bar_diagram(edges, bin_accuracy, mean_confidences, axes[0])
-        plot_bar_diagram(edges, bin_bal_accuracy, mean_confidences, axes[1])
-    else:
-        plot_bar_diagram(edges, bin_accuracy, mean_confidences, axes)
+        plot_bar_diagram(edges, bin_metric, mean_confidences, ax)
 
 
 def class_wise_standard_reliability_diagram(y_probs, y_preds, y_true, axes, bins="fd"):
@@ -86,13 +82,15 @@ def class_wise_standard_reliability_diagram(y_probs, y_preds, y_true, axes, bins
     y_preds_binarized = label_binarize(y_preds, classes=classes)
 
     for ax, c in zip(axes, range(len(classes))):
-        decorate_ax(ax, c==0, "Confidence level", f"Accuracy", f"Class {c}")
+        ax.set_title(f"Class {c}")
         probs = np.where(y_preds_binarized[:, c]==0, 1-y_probs[:, c], y_probs[:, c])
         standard_reliability_diagram(probs, y_preds_binarized[:, c], y_true_binarized[:, c], ax, bins)
 
 # Internal Cell
 
 def plot_ridge_diagram(beta_distributions_per_bin, proportions_per_bin, plot_densities, ax):
+
+    _decorate_ax(ax)
 
     class clipped_cm:
         def __init__(self, n, base_cm=cm.Greys):
@@ -172,6 +170,9 @@ def plot_ridge_diagram(beta_distributions_per_bin, proportions_per_bin, plot_den
 
 def ridge_reliability_diagram(y_probs, y_preds, y_true, ax, bins="fd", plot_densities=True, exact=False):
 
+    ax.set_ylabel("Confidence level")
+    ax.set_xlabel("Posterior balanced accuracy")
+
     num_classes = len(np.unique(y_true))
 
     bin_indices, edges = utils.get_bin_indices(y_probs, bins, 0.0, 1.0, return_edges=True)
@@ -211,6 +212,6 @@ def class_wise_ridge_reliability_diagram(y_probs, y_preds, y_true, axes, bins="f
     y_preds_binarized = label_binarize(y_preds, classes=classes)
 
     for ax, c in zip(axes, range(len(classes))):
-        decorate_ax(ax, c==0, "Confidence level", f"Accuracy", f"Class {c}")
+        ax.set_title(f"Class {c}")
         probs = np.where(y_preds_binarized[:, c]==0, 1-y_probs[:, c], y_probs[:, c])
         ridge_reliability_diagram(probs, y_preds_binarized[:, c], y_true_binarized[:, c], ax, bins, plot_densities, exact=True)
