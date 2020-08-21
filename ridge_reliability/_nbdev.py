@@ -2,7 +2,19 @@
 
 __all__ = ["index", "modules", "custom_doc_links", "git_url"]
 
-index = {"freedman_diaconis": "utils.ipynb",
+index = {"ece": "metrics.ipynb",
+         "ece_v2": "metrics.ipynb",
+         "ece_v3": "metrics.ipynb",
+         "ece_v4": "metrics.ipynb",
+         "class_wise_ece": "metrics.ipynb",
+         "decorate_ax": "plots.ipynb",
+         "plot_bar_diagram": "plots.ipynb",
+         "standard_reliability_diagram": "plots.ipynb",
+         "class_wise_standard_reliability_diagram": "plots.ipynb",
+         "plot_ridge_diagram": "plots.ipynb",
+         "ridge_reliability_diagram": "plots.ipynb",
+         "class_wise_ridge_reliability_diagram": "plots.ipynb",
+         "freedman_diaconis": "utils.ipynb",
          "get_bin_indices": "utils.ipynb",
          "binning": "utils.ipynb"}
 
