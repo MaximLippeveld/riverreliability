@@ -1,9 +1,9 @@
-repository: MaximLippeveld/ridge_reliability
+repository: MaximLippeveld/ridgereliability
 output: web
-topnav_title: ridge_reliability
-site_title: ridge_reliability
+topnav_title: ridgereliability
+site_title: ridgereliability
 company_name: Ghent University
-description: The ridge-reliability diagram provides insight into classifier reliability with a visualization and metric based on the posterior balanaced accuracy.
+description: The ridge reliability diagram provides insight into classifier reliability with a visualization and metric based on the posterior balanaced accuracy.
 # Set to false to disable KaTeX math
 use_math: true
 # Add Google analytics id if you have one and want to use it here
@@ -61,4 +61,4 @@ sidebars:
 permalink: pretty
 
 theme: jekyll-theme-cayman
-baseurl: /ridge_reliability/
+baseurl: /ridgereliability/

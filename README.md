@@ -1,5 +1,5 @@
 # Ridge reliability
-> The ridge-reliability package provides reliability diagrams and metrics. These include the ridge reliability diagram.
+> The ridge-reliability package provides tools for assessing classifier calibration.
 
 
 ## Install

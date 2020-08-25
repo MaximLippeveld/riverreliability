@@ -7,12 +7,12 @@ index = {"ece": "metrics.ipynb",
          "ece_v3": "metrics.ipynb",
          "ece_v4": "metrics.ipynb",
          "class_wise_ece": "metrics.ipynb",
-         "bar_diagram": "plots.ipynb",
-         "confidence_reliability_diagram": "plots.ipynb",
-         "class_wise_standard_reliability_diagram": "plots.ipynb",
-         "plot_ridge_diagram": "plots.ipynb",
+         "ridge_diagram": "plots.ipynb",
          "ridge_reliability_diagram": "plots.ipynb",
          "class_wise_ridge_reliability_diagram": "plots.ipynb",
+         "bar_diagram": "plots.ipynb",
+         "confidence_reliability_diagram": "plots.ipynb",
+         "class_wise_confidence_reliability_diagram": "plots.ipynb",
          "freedman_diaconis": "utils.ipynb",
          "get_bin_indices": "utils.ipynb",
          "binning": "utils.ipynb"}
@@ -21,8 +21,8 @@ modules = ["metrics.py",
            "plots.py",
            "utils.py"]
 
-doc_url = "https://MaximLippeveld.github.io/ridge_reliability/"
+doc_url = "https://MaximLippeveld.github.io/ridgereliability/"
 
-git_url = "https://github.com/MaximLippeveld/ridge_reliability/tree/master/"
+git_url = "https://github.com/MaximLippeveld/ridgereliability/tree/master/"
 
 def custom_doc_links(name): return None
