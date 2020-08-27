@@ -5,7 +5,7 @@ __all__ = ['ridge_reliability_diagram', 'class_wise_ridge_reliability_diagram', 
 
 # Cell
 
-from ridgereliability import utils
+from ridgereliability import utils, metrics as rmetrics
 
 import matplotlib.pyplot as plt
 from matplotlib import gridspec, cm, axes
@@ -114,9 +114,20 @@ def ridge_diagram(beta_distributions_per_bin, proportions_per_bin, plot_densitie
         # plot extra marker at distribution mode
         ax.scatter(dist_mode, proportion, color=cmap(proportion), s=3, zorder=layer[2])
 
+# Internal Cell
+def _add_metrics_to_title(ax, metrics, y_probs, y_preds, y_true):
+    title = ax.get_title()
+    if len(title) > 0:
+        title += " - "
+
+    for metric in metrics:
+        title += f"{metric.__name__}: {metric(y_probs, y_preds, y_true):.3f}, "
+
+    ax.set_title(title[:-2])
+
 # Cell
 
-def ridge_reliability_diagram(y_probs, y_preds, y_true, ax, bins="fd", plot_densities=True, exact=False):
+def ridge_reliability_diagram(y_probs, y_preds, y_true, ax, bins="fd", plot_densities=True, exact=False, metrics=[]):
 
     ax.set_ylabel("Confidence level")
     ax.set_xlabel("Posterior balanced accuracy")
@@ -128,6 +139,9 @@ def ridge_reliability_diagram(y_probs, y_preds, y_true, ax, bins="fd", plot_dens
             y_probs = y_probs[:, 0]
         else:
             y_probs = y_probs.max(axis=1)
+
+    if len(metrics) > 0:
+        _add_metrics_to_title(ax, metrics, y_probs, y_preds, y_true)
 
     bin_indices, edges = utils.get_bin_indices(y_probs, bins, 0.0, 1.0, return_edges=True)
     unique_bin_indices = sorted(np.unique(bin_indices))
@@ -160,15 +174,34 @@ def ridge_reliability_diagram(y_probs, y_preds, y_true, ax, bins="fd", plot_dens
 
 # Cell
 
-def class_wise_ridge_reliability_diagram(y_probs, y_preds, y_true, axes, bins="fd", plot_densities=True):
+def class_wise_ridge_reliability_diagram(y_probs, y_preds, y_true, axes=None, bins="fd", plot_densities=True, metrics=[rmetrics.ece_v3], show_k_least_calibrated=None):
+
     classes = np.unique(y_true)
+
+    if show_k_least_calibrated is None:
+        show_k_least_calibrated = len(classes)
+
+    plots = min(show_k_least_calibrated, len(classes))
+
+    if axes is None:
+        fig, axes = plt.subplots(1, plots, subplot_kw={"aspect": 0.75}, constrained_layout=True, sharex=True, sharey=True, dpi=72)
+    assert len(axes) == plots, f"Wrong amount of axes provided: {plots} needed, but {len(axes)} provided."
 
     y_true_binarized = label_binarize(y_true, classes=classes)
     y_preds_binarized = label_binarize(y_preds, classes=classes)
 
-    for ax, c in zip(axes, range(len(classes))):
-        ax.set_title(f"Class {c}")
+    metric_values = []
+    for c in classes:
         probs = np.where(y_preds_binarized[:, c]==0, 1-y_probs[:, c], y_probs[:, c])
+        metric_values.append([m(probs, y_preds_binarized[:, c], y_true_binarized[:, c]) for m in metrics])
+    metric_values = np.array(metric_values)
+
+    for ax, c in zip(axes, np.argsort(metric_values[:, 0])[::-1][:show_k_least_calibrated]):
+        probs = np.where(y_preds_binarized[:, c]==0, 1-y_probs[:, c], y_probs[:, c])
+
+        ax.set_title(f"Class {c}")
+        _add_metrics_to_title(ax, metrics, probs, y_preds_binarized[:, c], y_true_binarized[:, c])
+
         ridge_reliability_diagram(probs, y_preds_binarized[:, c], y_true_binarized[:, c], ax, bins, plot_densities, exact=True)
 
 # Internal Cell
