@@ -94,7 +94,7 @@ def ridge_diagram(beta_distributions_per_bin, proportions_per_bin, plot_densitie
             beta_norm = dist
 
         prob_interval = beta.interval(0.95, a, b)
-        dist_mode = (a-1)/(a+b-2)
+        dist_mean = a/(a+b)
 
         # rescale it to 0-x range
         beta_norm /= beta_norm.max()
@@ -112,7 +112,7 @@ def ridge_diagram(beta_distributions_per_bin, proportions_per_bin, plot_densitie
             ax.plot(x[idx], beta_norm[idx]+proportion, 'r-', lw=1.5, color=cmap(proportion), zorder=layer[3])
 
         # plot extra marker at distribution mode
-        ax.scatter(dist_mode, proportion, color=cmap(proportion), s=3, zorder=layer[2])
+        ax.scatter(dist_mean, proportion, color=cmap(proportion), s=3, zorder=layer[2])
 
 # Internal Cell
 def _add_metrics_to_title(ax, metrics, y_probs, y_preds, y_true):
