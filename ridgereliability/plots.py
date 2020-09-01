@@ -8,7 +8,8 @@ __all__ = ['ridge_reliability_diagram', 'class_wise_ridge_reliability_diagram', 
 from ridgereliability import utils, metrics as rmetrics
 
 import matplotlib.pyplot as plt
-from matplotlib import gridspec, cm, axes
+import matplotlib.axes
+from matplotlib import gridspec, cm
 
 import numpy as np
 from scipy.stats import beta
@@ -22,7 +23,7 @@ from sklearn.preprocessing import label_binarize
 
 # Internal Cell
 
-def _decorate_ax(ax:axes.Axes):
+def _decorate_ax(ax:matplotlib.axes.Axes):
     """Apply cosmetic changes to a matplotlib axis.
 
     Arguments:
@@ -36,7 +37,7 @@ def _decorate_ax(ax:axes.Axes):
 
 # Internal Cell
 
-def ridge_diagram(beta_distributions_per_bin, proportions_per_bin, plot_densities, ax):
+def ridge_diagram(beta_distributions_per_bin:np.array, proportions_per_bin:np.array, plot_densities:bool, ax:matplotlib.axes.Axes):
 
     _decorate_ax(ax)
 
@@ -105,7 +106,7 @@ def ridge_diagram(beta_distributions_per_bin, proportions_per_bin, plot_densitie
             ax.plot([prob_interval[0], prob_interval[1]], [proportion, proportion], lw=1, color=cmap(proportion), zorder=layer[1])
         else:
             # plot densities if wanted
-            ax.plot(x, beta_norm+proportion, lw=1, linestyle="--", color=cmap(proportion), zorder=layer[1])
+#             ax.plot(x, beta_norm+proportion, lw=1, linestyle="--", color=cmap(proportion), zorder=layer[1])
             ax.plot([0, 1], [proportion, proportion], color=cmap(proportion), linestyle="dotted", lw=1, alpha=0.5, zorder=layer[1])
 
             idx = [j for j,p in enumerate(x) if prob_interval[0] <= p <= prob_interval[1]]
@@ -115,7 +116,7 @@ def ridge_diagram(beta_distributions_per_bin, proportions_per_bin, plot_densitie
         ax.scatter(dist_mean, proportion, color=cmap(proportion), s=3, zorder=layer[2])
 
 # Internal Cell
-def _add_metrics_to_title(ax, metrics, y_probs, y_preds, y_true):
+def _add_metrics_to_title(ax:matplotlib.axes.Axes, metrics:list, y_probs:np.array, y_preds:np.array, y_true:np.array):
     title = ax.get_title()
     if len(title) > 0:
         title += " - "
@@ -127,7 +128,7 @@ def _add_metrics_to_title(ax, metrics, y_probs, y_preds, y_true):
 
 # Cell
 
-def ridge_reliability_diagram(y_probs, y_preds, y_true, ax, bins="fd", plot_densities=True, exact=False, metrics=[]):
+def ridge_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np.array, ax:matplotlib.axes.Axes, bins="fd", plot_densities:bool=True, exact:bool=False):
 
     ax.set_ylabel("Confidence level")
     ax.set_xlabel("Posterior balanced accuracy")
@@ -139,9 +140,6 @@ def ridge_reliability_diagram(y_probs, y_preds, y_true, ax, bins="fd", plot_dens
             y_probs = y_probs[:, 0]
         else:
             y_probs = y_probs.max(axis=1)
-
-    if len(metrics) > 0:
-        _add_metrics_to_title(ax, metrics, y_probs, y_preds, y_true)
 
     bin_indices, edges = utils.get_bin_indices(y_probs, bins, 0.0, 1.0, return_edges=True)
     unique_bin_indices = sorted(np.unique(bin_indices))
@@ -174,7 +172,7 @@ def ridge_reliability_diagram(y_probs, y_preds, y_true, ax, bins="fd", plot_dens
 
 # Cell
 
-def class_wise_ridge_reliability_diagram(y_probs, y_preds, y_true, axes=None, bins="fd", plot_densities=True, metrics=[rmetrics.ece_v3], show_k_least_calibrated=None):
+def class_wise_ridge_reliability_diagram(y_probs, y_preds, y_true, axes:matplotlib.axes.Axes=None, bins="fd", plot_densities=True, metric=rmetrics.ece_v3, show_k_least_calibrated=None):
 
     classes = np.unique(y_true)
 
@@ -193,20 +191,18 @@ def class_wise_ridge_reliability_diagram(y_probs, y_preds, y_true, axes=None, bi
     metric_values = []
     for c in classes:
         probs = np.where(y_preds_binarized[:, c]==0, 1-y_probs[:, c], y_probs[:, c])
-        metric_values.append([m(probs, y_preds_binarized[:, c], y_true_binarized[:, c]) for m in metrics])
-    metric_values = np.array(metric_values)
+        metric_values.append(metric(probs, y_preds_binarized[:, c], y_true_binarized[:, c]))
 
-    for ax, c in zip(axes, np.argsort(metric_values[:, 0])[::-1][:show_k_least_calibrated]):
+    for ax, c in zip(axes, np.argsort(metric_values)[::-1][:show_k_least_calibrated]):
         probs = np.where(y_preds_binarized[:, c]==0, 1-y_probs[:, c], y_probs[:, c])
 
         ax.set_title(f"Class {c}")
-        _add_metrics_to_title(ax, metrics, probs, y_preds_binarized[:, c], y_true_binarized[:, c])
 
         ridge_reliability_diagram(probs, y_preds_binarized[:, c], y_true_binarized[:, c], ax, bins, plot_densities, exact=True)
 
 # Internal Cell
 
-def bar_diagram(edges:np.array, bin_accuracies:np.array, bin_confidences:np.array, ax:axes.Axes):
+def bar_diagram(edges:np.array, bin_accuracies:np.array, bin_confidences:np.array, ax:matplotlib.axes.Axes):
     """Plot a bar plot confidence reliability diagram.
 
     Arguments:
@@ -234,7 +230,7 @@ def bar_diagram(edges:np.array, bin_accuracies:np.array, bin_confidences:np.arra
 
 # Cell
 
-def confidence_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np.array, ax:axes.Axes, bins="fd", balanced:bool=True):
+def confidence_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np.array, ax:matplotlib.axes.Axes, bins="fd", balanced:bool=True):
     """Plot a confidence reliability diagram.
 
     Arguments:
@@ -280,7 +276,7 @@ def confidence_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np
 
 # Cell
 
-def class_wise_confidence_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np.array, axes:axes.Axes, bins="fd", balanced:bool=True):
+def class_wise_confidence_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np.array, axes:matplotlib.axes.Axes, bins="fd", balanced:bool=True):
     """Plot a class-wise confidence reliability diagram.
 
     Arguments:
