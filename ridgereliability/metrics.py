@@ -4,7 +4,7 @@ __all__ = ['ece', 'ece_v2', 'ece_v3', 'ece_v4', 'class_wise_ece']
 
 # Cell
 
-from reliability import utils
+from ridgereliability import utils
 
 import numpy as np
 import scipy.stats
