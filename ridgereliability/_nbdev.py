@@ -5,7 +5,6 @@ __all__ = ["index", "modules", "custom_doc_links", "git_url"]
 index = {"ece": "metrics.ipynb",
          "ece_v2": "metrics.ipynb",
          "ece_v3": "metrics.ipynb",
-         "ece_v4": "metrics.ipynb",
          "class_wise_ece": "metrics.ipynb",
          "ridge_diagram": "plots.ipynb",
          "ridge_reliability_diagram": "plots.ipynb",
