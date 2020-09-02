@@ -51,12 +51,9 @@ def ridge_diagram(beta_distributions_per_bin:np.array, proportions_per_bin:np.ar
             return self.cm[int(x*self.n)]
     cmap = clipped_cm(len(proportions_per_bin))
 
-    y_min = 0-1/len(beta_distributions_per_bin)
-    y_max = 1+1/len(beta_distributions_per_bin)
+    y_min = 0-1/(len(beta_distributions_per_bin)/2)
+    y_max = 1+1/(len(beta_distributions_per_bin)/2)
     ax.set_ylim(y_min, y_max)
-
-    # compute minimum distance between two consecutive proportion levels
-    min_dist = np.min(np.abs(proportions_per_bin[1:] - np.roll(proportions_per_bin, 1)[1:]))
 
     sorted_idx = np.argsort(proportions_per_bin)
 
@@ -99,21 +96,22 @@ def ridge_diagram(beta_distributions_per_bin:np.array, proportions_per_bin:np.ar
 
         # rescale it to 0-x range
         beta_norm /= beta_norm.max()
-        beta_norm /= len(proportions_per_bin)
+        beta_norm /= len(proportions_per_bin)/2
 
         if not plot_densities:
             # plot probability interval line
-            ax.plot([prob_interval[0], prob_interval[1]], [proportion, proportion], lw=1, color=cmap(proportion), zorder=layer[1])
+            ax.plot([prob_interval[0], prob_interval[1]], [proportion, proportion], lw=1, color=cmap(1-proportion), zorder=layer[1])
         else:
             # plot densities if wanted
-#             ax.plot(x, beta_norm+proportion, lw=1, linestyle="--", color=cmap(proportion), zorder=layer[1])
-            ax.plot([0, 1], [proportion, proportion], color=cmap(proportion), linestyle="dotted", lw=1, alpha=0.5, zorder=layer[1])
+            ax.plot(x, beta_norm+proportion, lw=1, linestyle="dotted", color=cmap(1-proportion), zorder=layer[1])
+            # ax.plot([0, 1], [proportion, proportion], color=cmap(1-proportion), linestyle="dotted", lw=1, alpha=0.5, zorder=layer[1])
 
             idx = [j for j,p in enumerate(x) if prob_interval[0] <= p <= prob_interval[1]]
-            ax.plot(x[idx], beta_norm[idx]+proportion, 'r-', lw=1.5, color=cmap(proportion), zorder=layer[3])
+            ax.plot(x[idx], beta_norm[idx]+proportion, 'r-', lw=1.5, color=cmap(1-proportion), zorder=layer[3])
+            ax.plot(x[idx], beta_norm[idx]+proportion, 'r-', lw=4, color="white", zorder=layer[2])
 
         # plot extra marker at distribution mode
-        ax.scatter(dist_mean, proportion, color=cmap(proportion), s=3, zorder=layer[2])
+        ax.scatter(dist_mean, proportion, color=cmap(1-proportion), edgecolor="white", linewidth=2, s=25, zorder=layer[2])
 
 # Internal Cell
 def _add_metrics_to_title(ax:matplotlib.axes.Axes, metrics:list, y_probs:np.array, y_preds:np.array, y_true:np.array):
