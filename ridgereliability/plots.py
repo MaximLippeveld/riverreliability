@@ -51,9 +51,10 @@ def ridge_diagram(beta_distributions_per_bin:np.array, proportions_per_bin:np.ar
             return self.cm[int(x*self.n)]
     cmap = clipped_cm(len(proportions_per_bin))
 
-    y_min = 0-1/(len(beta_distributions_per_bin)/2)
+#     y_min = 0-1/(len(beta_distributions_per_bin)/2)
     y_max = 1+1/(len(beta_distributions_per_bin)/2)
-    ax.set_ylim(y_min, y_max)
+    ax.set_ylim(0, y_max)
+    ax.set_xlim(0, 1)
 
     sorted_idx = np.argsort(proportions_per_bin)
 
@@ -200,7 +201,7 @@ def class_wise_ridge_reliability_diagram(y_probs, y_preds, y_true, axes:matplotl
 
 # Internal Cell
 
-def bar_diagram(edges:np.array, bin_accuracies:np.array, bin_confidences:np.array, ax:matplotlib.axes.Axes):
+def bar_diagram(edges:np.array, bin_accuracies:np.array, bin_confidences:np.array, ax:matplotlib.axes.Axes, bin_sem:np.array=None):
     """Plot a bar plot confidence reliability diagram.
 
     Arguments:
@@ -214,13 +215,17 @@ def bar_diagram(edges:np.array, bin_accuracies:np.array, bin_confidences:np.arra
 
     ax.plot([0,1], [0,1], linestyle="--", color=cm.tab20c(16))
 
-    for xi, yi, bi in zip(edges, bin_accuracies, bin_confidences):
+    for i, (xi, yi, bi) in enumerate(zip(edges, bin_accuracies, bin_confidences)):
         if bi is np.nan:
             continue
         if yi < 0:
             continue
+        if bin_sem is not None:
+            sem = bin_sem[i]
+        else:
+            sem = 0.
 
-        ax.bar(xi, yi, width=edges[1], align="edge", color=cm.tab20c(18), edgecolor=cm.tab20c(19), linewidth=2, zorder=0)
+        ax.bar(xi, yi, width=edges[1], align="edge", color=cm.tab20c(18), edgecolor=cm.tab20c(19), yerr=sem, linewidth=2, zorder=0)
         if yi >= bi:
             bar = ax.bar(xi+edges[1]/2, np.abs(bi-yi), bottom=bi, width=edges[1]/4, align="center", color=cm.tab20c(17), zorder=1)
         else:
