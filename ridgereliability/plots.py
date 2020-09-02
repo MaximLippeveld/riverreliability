@@ -170,7 +170,7 @@ def ridge_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np.arra
 
 # Cell
 
-def class_wise_ridge_reliability_diagram(y_probs, y_preds, y_true, axes:matplotlib.axes.Axes=None, bins="fd", plot_densities=True, metric=rmetrics.ece_v3, show_k_least_calibrated=None):
+def class_wise_ridge_reliability_diagram(y_probs, y_preds, y_true, axes:matplotlib.axes.Axes=None, bins="fd", plot_densities=True, metric=rmetrics.peace, show_k_least_calibrated=None):
 
     classes = np.unique(y_true)
 
