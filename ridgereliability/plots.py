@@ -36,20 +36,21 @@ def _decorate_ax(ax:matplotlib.axes.Axes):
     plt.setp(ax.spines.values(), color=cm.tab20c(18))
     plt.setp([ax.get_xticklines(), ax.get_yticklines()], color=cm.tab20c(18))
 
+class clipped_cm:
+        def __init__(self, n, base_cm=cm.Greys):
+            self.n = n
+            self.space = np.linspace(0.3, 0.7, n+1)
+            self.cm = [base_cm(p) for p in self.space]
+
+        def __call__(self, x):
+            return self.cm[int(x*self.n)]
+
 # Internal Cell
 
 def ridge_diagram(beta_distributions_per_bin:np.array, proportions_per_bin:np.array, plot_densities:bool, ax:matplotlib.axes.Axes):
 
     _decorate_ax(ax)
 
-    class clipped_cm:
-        def __init__(self, n, base_cm=cm.Greys):
-            self.n = n
-            self.space = np.linspace(0.2, 0.8, n+1)
-            self.cm = [base_cm(p) for p in self.space]
-
-        def __call__(self, x):
-            return self.cm[int(x*self.n)]
     cmap = clipped_cm(len(proportions_per_bin))
 
     y_max = 1+1/(len(beta_distributions_per_bin)/2)
@@ -211,11 +212,12 @@ def bar_diagram(edges:np.array, bin_accuracies:np.array, bin_confidences:np.arra
     """
 
     _decorate_ax(ax)
+    cmap = clipped_cm(len(bin_accuracies))
 
     ax.plot([0,1], [0,1], linestyle="--", color=cm.tab20c(16))
 
     for i, (xi, yi, bi) in enumerate(zip(edges, bin_accuracies, bin_confidences)):
-        if bi is np.nan:
+        if np.isnan(bi):
             continue
         if yi < 0:
             continue
@@ -224,7 +226,7 @@ def bar_diagram(edges:np.array, bin_accuracies:np.array, bin_confidences:np.arra
         else:
             sem = 0.
 
-        ax.bar(xi, yi, width=edges[1], align="edge", color=cm.tab20c(18), edgecolor=cm.tab20c(19), yerr=sem, linewidth=2, zorder=0)
+        ax.bar(xi, yi, width=edges[1], align="edge", color=cmap(1-bi), edgecolor="grey", yerr=sem, linewidth=2, zorder=0)
         if yi >= bi:
             bar = ax.bar(xi+edges[1]/2, np.abs(bi-yi), bottom=bi, width=edges[1]/4, align="center", color=cm.tab20c(17), zorder=1)
         else:
