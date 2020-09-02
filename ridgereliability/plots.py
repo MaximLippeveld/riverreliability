@@ -30,6 +30,7 @@ def _decorate_ax(ax:matplotlib.axes.Axes):
     ax -- matplotlib axis
     """
 
+    ax.set_xlim(0, 1)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     plt.setp(ax.spines.values(), color=cm.tab20c(18))
@@ -51,10 +52,8 @@ def ridge_diagram(beta_distributions_per_bin:np.array, proportions_per_bin:np.ar
             return self.cm[int(x*self.n)]
     cmap = clipped_cm(len(proportions_per_bin))
 
-#     y_min = 0-1/(len(beta_distributions_per_bin)/2)
     y_max = 1+1/(len(beta_distributions_per_bin)/2)
     ax.set_ylim(0, y_max)
-    ax.set_xlim(0, 1)
 
     sorted_idx = np.argsort(proportions_per_bin)
 
