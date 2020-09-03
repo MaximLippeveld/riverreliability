@@ -31,6 +31,7 @@ def _decorate_ax(ax:matplotlib.axes.Axes):
     """
 
     ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     plt.setp(ax.spines.values(), color=cm.tab20c(18))
@@ -53,8 +54,9 @@ def ridge_diagram(beta_distributions_per_bin:np.array, proportions_per_bin:np.ar
 
     cmap = clipped_cm(len(proportions_per_bin))
 
-    y_max = 1+1/(len(beta_distributions_per_bin)/2)
+    y_max = 1+1/(len(beta_distributions_per_bin)/1.5)
     ax.set_ylim(0, y_max)
+    ax.spines["left"].set_bounds(low=0., high=1.0)
 
     sorted_idx = np.argsort(proportions_per_bin)
 
@@ -108,8 +110,8 @@ def ridge_diagram(beta_distributions_per_bin:np.array, proportions_per_bin:np.ar
             # ax.plot([0, 1], [proportion, proportion], color=cmap(1-proportion), linestyle="dotted", lw=1, alpha=0.5, zorder=layer[1])
 
             idx = [j for j,p in enumerate(x) if prob_interval[0] <= p <= prob_interval[1]]
-            ax.plot(x[idx], beta_norm[idx]+proportion, 'r-', lw=1.5, color=cmap(1-proportion), zorder=layer[3])
-            ax.plot(x[idx], beta_norm[idx]+proportion, 'r-', lw=6, color="white", zorder=layer[2])
+            ax.plot(x[idx], beta_norm[idx]+proportion, 'r-', lw=1.5, color=cmap(1-proportion), zorder=layer[3], clip_on=False)
+            ax.plot(x[idx], beta_norm[idx]+proportion, 'r-', lw=5, color="white", zorder=layer[2], clip_on=False)
 
         # plot extra marker at distribution mode
         ax.scatter(dist_mean, proportion, color=cmap(1-proportion), edgecolor="white", linewidth=2, s=25, zorder=layer[2])
@@ -160,7 +162,7 @@ def ridge_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np.arra
 
 # Cell
 
-def class_wise_ridge_reliability_diagram(y_probs, y_preds, y_true, axes:matplotlib.axes.Axes=None, bins="fd", plot_densities=True, metric=rmetrics.peace, show_k_least_calibrated=None):
+def class_wise_ridge_reliability_diagram(y_probs, y_preds, y_true, axes:matplotlib.axes.Axes=None, bins="fd", plot_densities=True, metric=None, show_k_least_calibrated=None):
 
     classes = np.unique(y_true)
 
@@ -176,12 +178,17 @@ def class_wise_ridge_reliability_diagram(y_probs, y_preds, y_true, axes:matplotl
     y_true_binarized = label_binarize(y_true, classes=classes)
     y_preds_binarized = label_binarize(y_preds, classes=classes)
 
-    metric_values = []
-    for c in classes:
-        probs = np.where(y_preds_binarized[:, c]==0, 1-y_probs[:, c], y_probs[:, c])
-        metric_values.append(metric(probs, y_preds_binarized[:, c], y_true_binarized[:, c]))
+    if metric is None:
+        a = classes
+    else:
+        metric_values = []
+        for c in classes:
+            probs = np.where(y_preds_binarized[:, c]==0, 1-y_probs[:, c], y_probs[:, c])
+            metric_values.append(metric(probs, y_preds_binarized[:, c], y_true_binarized[:, c]))
 
-    for ax, c in zip(axes, np.argsort(metric_values)[::-1][:show_k_least_calibrated]):
+        a = np.argsort(metric_values)[::-1][:show_k_least_calibrated]
+
+    for ax, c in zip(axes, a):
         probs = np.where(y_preds_binarized[:, c]==0, 1-y_probs[:, c], y_probs[:, c])
 
         ax.set_title(f"Class {c}")

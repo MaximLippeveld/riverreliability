@@ -4,12 +4,10 @@
 
 ## Install
 
-First install `Cython`
-
-`pip install Cython`
-
-Then install `ridgereliability`
+Install the package with:
 
 `pip install ridgereliability`
 
 ## How to use
+
+Please see the notebooks directory for examples on how to use this package.
