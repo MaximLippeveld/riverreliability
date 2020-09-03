@@ -1,6 +1,7 @@
 {
   "ridgereliability": {
     "Overview": "/",
+    "Beta distribution utilities": "/beta_utils",
     "Metrics": "/metrics",
     "Plots": "/plots",
     "Utilities": "/utils"

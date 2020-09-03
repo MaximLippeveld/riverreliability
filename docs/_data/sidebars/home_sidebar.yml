@@ -10,6 +10,9 @@ entries:
       title: Overview
       url: /
     - output: web,pdf
+      title: Beta distribution utilities
+      url: /beta_utils
+    - output: web,pdf
       title: Metrics
       url: /metrics
     - output: web,pdf

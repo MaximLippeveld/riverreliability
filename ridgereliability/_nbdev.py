@@ -2,7 +2,20 @@
 
 __all__ = ["index", "modules", "custom_doc_links", "git_url"]
 
-index = {"ece": "metrics.ipynb",
+index = {"get_beta_parameters": "beta_utils.ipynb",
+         "convolve_betas_fft": "beta_utils.ipynb",
+         "convolve_betas": "beta_utils.ipynb",
+         "balanced_accuracy_expected": "beta_utils.ipynb",
+         "beta_sum_pdf": "beta_utils.ipynb",
+         "beta_avg_pdf": "beta_utils.ipynb",
+         "beta_sum_cdf": "beta_utils.ipynb",
+         "beta_avg_cdf": "beta_utils.ipynb",
+         "beta_avg_inv_cdf": "beta_utils.ipynb",
+         "recall": "beta_utils.ipynb",
+         "precision": "beta_utils.ipynb",
+         "mpba_score": "beta_utils.ipynb",
+         "micro_f1_score": "beta_utils.ipynb",
+         "ece": "metrics.ipynb",
          "ece_v2": "metrics.ipynb",
          "peace": "metrics.ipynb",
          "class_wise_ece": "metrics.ipynb",
@@ -17,7 +30,8 @@ index = {"ece": "metrics.ipynb",
          "get_bin_indices": "utils.ipynb",
          "binning": "utils.ipynb"}
 
-modules = ["metrics.py",
+modules = ["beta.py",
+           "metrics.py",
            "plots.py",
            "utils.py"]
 

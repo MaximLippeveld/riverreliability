@@ -10,7 +10,7 @@ import numpy as np
 import scipy.stats
 import scipy.integrate
 
-import mclearn.performance
+import ridgereliability.beta
 import sklearn.metrics
 
 # Cell
@@ -63,7 +63,7 @@ def ece_v2(y_probs, y_preds, y_true, bins="fd"):
     # define the bin function
     def bin_func(y_probs_bin, y_preds_bin, y_true_bin):
         confusion = sklearn.metrics.confusion_matrix(y_true_bin, y_preds_bin)
-        acc = mclearn.performance.balanced_accuracy_expected(confusion, fft=True)
+        acc = ridgereliability.beta.balanced_accuracy_expected(confusion, fft=True)
         conf = y_probs_bin.mean()
         return abs(acc - conf)
 
@@ -91,12 +91,12 @@ def peace(y_probs, y_preds, y_true, samples=1000, bins="fd"):
     def bin_func(y_probs_bin, y_preds_bin, y_true_bin):
         # estimate beta parameters
         confusion = sklearn.metrics.confusion_matrix(y_true_bin, y_preds_bin)
-        params = mclearn.performance.get_beta_parameters(confusion)
+        params = ridgereliability.beta.get_beta_parameters(confusion)
 
         # approximate the integral using Simpson's rule
         xs = np.linspace(0, 1, samples)
         conf = y_probs_bin.mean()
-        ys = abs(xs - conf) * mclearn.performance.beta_avg_pdf(xs, params, fft=True)
+        ys = abs(xs - conf) * ridgereliability.beta.beta_avg_pdf(xs, params, fft=True)
         return scipy.integrate.simps(ys, xs)
 
     # compute the full result

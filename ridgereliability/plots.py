@@ -13,7 +13,7 @@ from matplotlib import gridspec, cm
 
 import numpy as np
 from scipy.stats import beta
-from mclearn.performance import get_beta_parameters, beta_avg_pdf
+from .beta import get_beta_parameters, beta_avg_pdf
 
 import sklearn.datasets
 import sklearn.model_selection
@@ -37,9 +37,9 @@ def _decorate_ax(ax:matplotlib.axes.Axes):
     plt.setp([ax.get_xticklines(), ax.get_yticklines()], color=cm.tab20c(18))
 
 class clipped_cm:
-        def __init__(self, n, base_cm=cm.Greys):
+        def __init__(self, n, base_cm=cm.Greys, clip_range=(0.5, 1.0)):
             self.n = n
-            self.space = np.linspace(0.3, 0.7, n+1)
+            self.space = np.linspace(*clip_range, n+1)
             self.cm = [base_cm(p) for p in self.space]
 
         def __call__(self, x):
@@ -97,7 +97,7 @@ def ridge_diagram(beta_distributions_per_bin:np.array, proportions_per_bin:np.ar
 
         # rescale it to 0-x range
         beta_norm /= beta_norm.max()
-        beta_norm /= len(proportions_per_bin)/2
+        beta_norm /= len(proportions_per_bin)/1.5
 
         if not plot_densities:
             # plot probability interval line
@@ -109,21 +109,10 @@ def ridge_diagram(beta_distributions_per_bin:np.array, proportions_per_bin:np.ar
 
             idx = [j for j,p in enumerate(x) if prob_interval[0] <= p <= prob_interval[1]]
             ax.plot(x[idx], beta_norm[idx]+proportion, 'r-', lw=1.5, color=cmap(1-proportion), zorder=layer[3])
-            ax.plot(x[idx], beta_norm[idx]+proportion, 'r-', lw=4, color="white", zorder=layer[2])
+            ax.plot(x[idx], beta_norm[idx]+proportion, 'r-', lw=6, color="white", zorder=layer[2])
 
         # plot extra marker at distribution mode
         ax.scatter(dist_mean, proportion, color=cmap(1-proportion), edgecolor="white", linewidth=2, s=25, zorder=layer[2])
-
-# Internal Cell
-def _add_metrics_to_title(ax:matplotlib.axes.Axes, metrics:list, y_probs:np.array, y_preds:np.array, y_true:np.array):
-    title = ax.get_title()
-    if len(title) > 0:
-        title += " - "
-
-    for metric in metrics:
-        title += f"{metric.__name__}: {metric(y_probs, y_preds, y_true):.3f}, "
-
-    ax.set_title(title[:-2])
 
 # Cell
 
@@ -212,9 +201,9 @@ def bar_diagram(edges:np.array, bin_accuracies:np.array, bin_confidences:np.arra
     """
 
     _decorate_ax(ax)
-    cmap = clipped_cm(len(bin_accuracies))
+    cmap = clipped_cm(len(bin_accuracies), clip_range=(0.2, 0.7))
 
-    ax.plot([0,1], [0,1], linestyle="--", color=cm.tab20c(16))
+    ax.plot([0,1], [0,1], linestyle="--", color=cmap(1), alpha=0.3, linewidth=0.75)
 
     for i, (xi, yi, bi) in enumerate(zip(edges, bin_accuracies, bin_confidences)):
         if np.isnan(bi):
@@ -226,11 +215,14 @@ def bar_diagram(edges:np.array, bin_accuracies:np.array, bin_confidences:np.arra
         else:
             sem = 0.
 
-        ax.bar(xi, yi, width=edges[1], align="edge", color=cmap(1-bi), edgecolor="grey", yerr=sem, linewidth=2, zorder=0)
-        if yi >= bi:
-            bar = ax.bar(xi+edges[1]/2, np.abs(bi-yi), bottom=bi, width=edges[1]/4, align="center", color=cm.tab20c(17), zorder=1)
-        else:
-            bar = ax.bar(xi+edges[1]/2, np.abs(bi-yi), bottom=yi, width=edges[1]/4, align="center", color=cm.tab20c(17), zorder=1)
+        # plot bin value
+        ax.bar(xi, yi, width=edges[1], align="edge", color=cmap(1-bi), edgecolor="grey", yerr=sem, linewidth=1, zorder=0)
+
+        # plot gap to ideal value
+        ax.bar(
+            xi+edges[1]/2, np.abs(bi-yi), bottom=min(bi, yi), width=edges[1],
+            align="center", color=cmap(0), edgecolor="grey", linewidth=1, zorder=1
+        )
 
 # Cell
 

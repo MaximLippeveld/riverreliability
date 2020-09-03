@@ -4,6 +4,12 @@
 
 ## Install
 
-`pip install ridge-reliability`
+First install `Cython`
+
+`pip install Cython`
+
+Then install `ridgereliability`
+
+`pip install ridgereliability`
 
 ## How to use
