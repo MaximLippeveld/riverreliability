@@ -1,5 +1,5 @@
 # Ridge reliability
-> The ridge-reliability package provides tools for assessing classifier calibration.
+
 
 
 ## Install
