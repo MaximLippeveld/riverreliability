@@ -13,6 +13,7 @@ from matplotlib import gridspec, cm
 
 import numpy as np
 from scipy.stats import beta
+from scipy import interpolate
 from .beta import get_beta_parameters, beta_avg_pdf
 
 import sklearn.datasets
@@ -137,9 +138,16 @@ def river_diagram(beta_distributions_per_bin:np.array, proportions_per_bin:np.ar
             intervals[i, j] = beta.interval(l, a, b)
         means[i] = a/(a+b)
 
+    x = np.linspace(min(proportions_per_bin), max(proportions_per_bin), 1000)
     for i, l in enumerate(ci):
-        ax.fill_between(proportions_per_bin, intervals[:, i, 0], intervals[:, i, 1], zorder=i, color=cm.Greys(0.2+i*0.1), label=f"{int(l*100):2d}% CI")
-    ax.plot(proportions_per_bin, means, ".-", ms=10, color="black", zorder=4, label="Mean")
+        f0 = interpolate.PchipInterpolator(proportions_per_bin, intervals[:, i, 0])
+        f1 = interpolate.PchipInterpolator(proportions_per_bin, intervals[:, i, 1])
+
+        ax.fill_between(x, f0(x), f1(x), zorder=i, color=cm.Greys(0.2+i*0.1), label=f"{int(l*100):2d}% CI")
+
+    fm = interpolate.PchipInterpolator(proportions_per_bin, means)
+    ax.plot(x, fm(x), color="black", zorder=4, label="Mean")
+    ax.scatter(proportions_per_bin, means, s=20, color="black", zorder=4)
     ax.plot([0,1], [0,1], color=cm.Greys(0.8), linestyle="--", zorder=5, label="Perfect calibration")
 
 # Cell
