@@ -1,0 +1,4 @@
+experiments/models/cifar10_densenet.h5 filter=lfs diff=lfs merge=lfs -text
+experiments/models/cifar10_lenet.h5 filter=lfs diff=lfs merge=lfs -text
+experiments/models/cifar10_resnet.h5 filter=lfs diff=lfs merge=lfs -text
+experiments/models/cifar10_vgg19.h5 filter=lfs diff=lfs merge=lfs -text
