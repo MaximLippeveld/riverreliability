@@ -21,11 +21,12 @@ import sklearn.model_selection
 import sklearn.svm
 from sklearn.metrics import confusion_matrix, accuracy_score, balanced_accuracy_score
 from sklearn.preprocessing import label_binarize
+import sklearn.utils
 
 # Internal Cell
 
 def _decorate_ax(ax:matplotlib.axes.Axes):
-    """Apply cosmetic changes to a matplotlib axis.
+    """Apply styling changes to a matplotlib axis.
 
     Arguments:
     ax -- matplotlib axis
@@ -39,6 +40,16 @@ def _decorate_ax(ax:matplotlib.axes.Axes):
     plt.setp([ax.get_xticklines(), ax.get_yticklines()], color=cm.tab20c(18))
 
 def _get_beta_pdf(dist):
+    """Get pdf and beta parameters from `dist`.
+
+    `dist` is either:
+     - a tuple which contains a and b, in which case the exact pdf is sampled
+     - a vector containing samples from a beta pdf (with unknown a and b), in which case MLE is used to estimate a and b
+
+    Returns:
+    tuple containing a, b, pdf and linspace x over which the pdf was sampled
+    """
+
     if len(dist) == 2:
         # dist contains the parameters of the beta distribution
         a, b = dist
@@ -53,11 +64,12 @@ def _get_beta_pdf(dist):
 
         # make it impossible to sample 0 or 1
         # in theory this should never happen, but approximations introduce errors
-        dist[0] = 0.0
-        dist[-1] = 0.0
+        prob = dist.copy()
+        prob[0] = 0.0
+        prob[-1] = 0.0
 
         x = np.linspace(0, 1, len(dist))
-        samples = np.random.choice(x, size=500, p=dist/dist.sum())
+        samples = np.random.choice(x, size=500, p=prob/prob.sum())
 
         ## fit a beta distribution to the samples
         a, b, loc, scale = beta.fit(samples, floc=0, fscale=1)
@@ -65,6 +77,34 @@ def _get_beta_pdf(dist):
         pdf = dist
 
     return a, b, pdf, x
+
+def _pre_plot_checks(y_probs, y_preds, y_true, ax, ci, style=None, required_axes=None):
+    """Perform some pre-plotting checks on input data, create required axes if necessary and compute number of classes."""
+
+    num_classes = len(sklearn.utils.multiclass.unique_labels(y_preds, y_true))
+
+    if (style is not None) and (style not in ["river", "ridge"]):
+        raise ValueError(f"Unknown style {style}")
+
+    if (required_axes == 1) and (ax is None):
+            fig, ax = plt.subplots(subplot_kw={"aspect": 0.75}, dpi=100, tight_layout=True)
+    else:
+        required_axes = num_classes if required_axes is None else required_axes
+        if ax is None:
+            fig, ax = plt.subplots(1, required_axes, subplot_kw={"aspect": 0.75}, constrained_layout=True, sharex=True, sharey=True, dpi=100)
+        if (required_axes != 1) and (len(ax) != required_axes):
+            raise ValueError(f"Wrong amount of axes provided: {required_axes} needed, but {len(ax)} provided.")
+
+    sklearn.utils.check_consistent_length(y_probs, y_preds, y_true)
+
+    if ci is not None:
+        ci = ci if isinstance(ci, list) else [ci]
+        for a in ci:
+            if (a > 1) or (a < 0):
+                raise ValueError(f"CI must be in [0, 1]")
+
+    return num_classes, ax
+
 
 class clipped_cm:
         def __init__(self, n, base_cm=cm.Greys, clip_range=(0.5, 1.0)):
@@ -77,59 +117,60 @@ class clipped_cm:
 
 # Internal Cell
 
-def ridge_diagram(beta_distributions_per_bin:np.array, proportions_per_bin:np.array, ax:matplotlib.axes.Axes, ci:float=0.95):
+def ridge_diagram(distributions:np.array, confidence_levels:np.array, ax:matplotlib.axes.Axes, ci:float):
 
     _decorate_ax(ax)
+    cmap = clipped_cm(len(distributions))
+    n_layers = 4
 
-    cmap = clipped_cm(len(proportions_per_bin))
-
-    y_max = 1+1/(len(beta_distributions_per_bin)/1.5)
+    # set y-axis bounds to prevent clipping of top distribution
+    y_max = 1+1/(len(distributions)/1.5)
     ax.set_ylim(0, y_max)
     ax.spines["left"].set_bounds(low=0., high=1.0)
 
+    # plot identity
     ax.plot([0,1], [0,1], color=cm.tab20c(19), zorder=0)
 
-    for i, (proportion, dist) in enumerate(zip(proportions_per_bin, beta_distributions_per_bin)):
-        n_layers = 4
-        layer = [len(proportions_per_bin)*n_layers+1 - (n_layers*i)+n for n in range(n_layers)]
+    for i, (cl, dist) in enumerate(zip(confidence_levels, distributions)):
+        layer = [len(confidence_levels)*n_layers+1 - (n_layers*i)+n for n in range(n_layers)]
 
-        if proportion is np.nan:
+        if cl is np.nan:
             continue
 
         a, b, pdf, x = _get_beta_pdf(dist)
 
+        # compute distribution stats
         interval = beta.interval(ci, a, b)
         dist_mean = a/(a+b)
 
-        # rescale it to 0-x range
+        # rescale pdf to 0-x range
         pdf /= pdf.max()
-        pdf /= len(proportions_per_bin)/1.5
+        pdf /= len(distributions)/1.5
 
         # plot full distribution
-        ax.plot(x, pdf+proportion, lw=1, linestyle="dotted", color=cmap(1-proportion), zorder=layer[1])
+        ax.plot(x, pdf+cl, lw=1, linestyle="dotted", color=cmap(1-cl), zorder=layer[1])
 
         # plot confidence interval
         idx = [j for j,p in enumerate(x) if interval[0] <= p <= interval[1]]
-        ax.plot(x[idx], pdf[idx]+proportion, 'r-', lw=1.5, color=cmap(1-proportion), zorder=layer[3], clip_on=False)
-        ax.plot(x[idx], pdf[idx]+proportion, 'r-', lw=5, color="white", zorder=layer[2], clip_on=False)
+        ax.plot(x[idx], pdf[idx]+cl, 'r-', lw=1.5, color=cmap(1-cl), zorder=layer[3], clip_on=False)
+        ax.plot(x[idx], pdf[idx]+cl, 'r-', lw=5, color="white", zorder=layer[2], clip_on=False)
 
         # plot extra marker at distribution mode
-        ax.scatter(dist_mean, proportion, color=cmap(1-proportion), edgecolor="white", linewidth=2, s=25, zorder=layer[2])
+        ax.scatter(dist_mean, cl, color=cmap(1-cl), edgecolor="white", linewidth=2, s=25, zorder=layer[2])
 
 # Internal Cell
 
-def river_diagram(beta_distributions_per_bin:np.array, proportions_per_bin:np.array, ax:matplotlib.axes.Axes, ci=[0.90, 0.95, 0.99]):
+def river_diagram(distributions:np.array, confidence_levels:np.array, ax:matplotlib.axes.Axes, ci:list):
 
     ci = sorted(ci)[::-1]
 
     _decorate_ax(ax)
-
     ax.set_ylim(0, 1)
 
-    intervals = np.empty((len(proportions_per_bin), len(ci), 2), dtype=float)
-    means = np.empty((len(proportions_per_bin),), dtype=float)
-    for i, (proportion, dist) in enumerate(zip(proportions_per_bin, beta_distributions_per_bin)):
-        if proportion is np.nan:
+    intervals = np.empty((len(confidence_levels), len(ci), 2), dtype=float)
+    means = np.empty((len(confidence_levels),), dtype=float)
+    for i, (cl, dist) in enumerate(zip(confidence_levels, distributions)):
+        if cl is np.nan:
             continue
 
         a, b, pdf, _ = _get_beta_pdf(dist)
@@ -138,97 +179,117 @@ def river_diagram(beta_distributions_per_bin:np.array, proportions_per_bin:np.ar
             intervals[i, j] = beta.interval(l, a, b)
         means[i] = a/(a+b)
 
-    x = np.linspace(min(proportions_per_bin), max(proportions_per_bin), 1000)
+    x = np.linspace(min(confidence_levels), max(confidence_levels), 1000)
     for i, l in enumerate(ci):
-        f0 = interpolate.PchipInterpolator(proportions_per_bin, intervals[:, i, 0])
-        f1 = interpolate.PchipInterpolator(proportions_per_bin, intervals[:, i, 1])
+        f0 = interpolate.PchipInterpolator(confidence_levels, intervals[:, i, 0])
+        f1 = interpolate.PchipInterpolator(confidence_levels, intervals[:, i, 1])
 
         ax.fill_between(x, f0(x), f1(x), zorder=i, color=cm.Greys(0.2+i*0.1), label=f"{int(l*100):2d}% CI")
 
-    fm = interpolate.PchipInterpolator(proportions_per_bin, means)
+    fm = interpolate.PchipInterpolator(confidence_levels, means)
     ax.plot(x, fm(x), color="black", zorder=4, label="Mean")
-    ax.scatter(proportions_per_bin, means, s=20, color="black", zorder=4)
+    ax.scatter(confidence_levels, means, s=20, color="black", zorder=4)
     ax.plot([0,1], [0,1], color=cm.Greys(0.8), linestyle="--", zorder=5, label="Perfect calibration")
 
 # Cell
 
-def posterior_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np.array, ax:matplotlib.axes.Axes=None, bins="fd", style:str="river", exact:bool=False, ci=None):
+def posterior_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np.array, ax:matplotlib.axes.Axes=None, bins="fd", style:str="river", ci=None):
+    """Plot the posterior balanced accuracy-based reliability diagram.
 
-    assert "Unknown style", style in ["river", "ridge"]
+    Arguments:
+    y_probs -- Array containing prediction confidences
+    y_preds -- Array containing predicted labels (shape (N,))
+    y_true -- Array containing true labels (shape (N,))
+    ax -- Axes on which the diagram will be plotted (will be decorated by `_decorate_ax`)
+    bins -- Description of amount of bins in which to divide prediction confidences (see `numpy.histogram_bin_edges` for options)
+    style -- Descriptor of style in which to plot the diagram (ridge or river)
+    ci -- Confidence interval level to plot. When style is river provide a list, otherwise a float.
 
-    if ax is None:
-        fig, ax = plt.subplots(subplot_kw={"aspect": 0.75}, dpi=100, tight_layout=True)
+    Returns:
+    Axes containing the plot
+    """
 
-    num_classes = len(np.unique(y_true))
+    num_classes, ax = _pre_plot_checks(y_probs, y_preds, y_true, ax, ci, style, required_axes=1)
 
+    # bin the probabilities
     bin_indices, edges = utils.get_bin_indices(y_probs, bins, 0.0, 1.0, return_edges=True)
     unique_bin_indices = sorted(np.unique(bin_indices))
 
-    proportions = np.empty((len(unique_bin_indices),), dtype=np.float32) # store mean confidence
+    confidence_levels = np.empty((len(unique_bin_indices),), dtype=np.float32) # store mean confidence
 
-    if not exact:
+    if num_classes > 2:
+        # the beta distribution will be the average of the per-class distribution
         n_samples = 10000
         distributions = np.empty((len(unique_bin_indices), n_samples), dtype=np.float32) # store beta parameters
         x = np.linspace(0, 1, n_samples)
     else:
+        # the beta distributions will be exact
         distributions = np.empty((len(unique_bin_indices), 2), dtype=np.int)
 
-    # compute beta distributions per bin per class
+    # compute beta distribution per bin
     for i, bin_idx in enumerate(unique_bin_indices):
+
+        # select instances in this bin
         selector = bin_indices == bin_idx
 
-        proportions[i] = y_probs[selector].mean()
+        # set the confidence level to the average confidence reported in the bin
+        confidence_levels[i] = y_probs[selector].mean()
 
-        if not exact:
+        if num_classes > 2:
+            # compute the average beta distribution
             conf = confusion_matrix(y_true[selector], y_preds[selector], labels=np.arange(0, num_classes))
             parameters = get_beta_parameters(conf)
             distributions[i] = beta_avg_pdf(x, parameters)
         else:
+            # compute the exact beta distribution
             correct = (y_true[selector] == y_preds[selector]).sum()
             incorrect = len(y_true[selector]) - correct
             distributions[i] = correct + 1, incorrect + 1
 
+    # plot the actual diagram
     if style == "river":
         ax.set_xlabel("Confidence level")
         ax.set_ylabel("Posterior balanced accuracy")
-        if isinstance(ci, list):
-            river_diagram(distributions, proportions, ax, ci=ci)
-        else:
-            river_diagram(distributions, proportions, ax)
+        ci = [0.90, 0.95, 0.99] if ci is None else ci
+        river_diagram(distributions, confidence_levels, ax, ci=ci)
     elif style == "ridge":
         ax.set_ylabel("Confidence level")
         ax.set_xlabel("Posterior balanced accuracy")
-        if ci is not None:
-            ridge_diagram(distributions, proportions, ax, ci=ci)
-        else:
-            ridge_diagram(distributions, proportions, ax)
+        ci = 0.95 if ci is None else ci
+        ridge_diagram(distributions, confidence_levels, ax, ci=ci)
 
     return ax
 
 
 # Cell
 
-def class_wise_posterior_reliability_diagram(y_probs, y_preds, y_true, axes:matplotlib.axes.Axes=None, bins="fd", style:str="river", metric=None, show_k_least_calibrated:int=None):
+def class_wise_posterior_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np.array, axes:matplotlib.axes.Axes=None, bins="fd", style:str="river", metric=None, show_k_least_calibrated:int=None, ci=None):
+    """Plot the class-wise posterior balanced accuracy-based reliability diagram.
 
-    classes = np.unique(y_true)
+    Arguments:
+    y_probs -- Array containing prediction confidences
+    y_preds -- Array containing predicted labels (shape (N,))
+    y_true -- Array containing true labels (shape (N,))
+    axes -- Axes on which the diagram will be plotted (will be decorated by `_decorate_ax`)
+    bins -- Description of amount of bins in which to divide prediction confidences (see `numpy.histogram_bin_edges` for options)
+    style -- Descriptor of style in which to plot the diagram (ridge or river)
+    ci -- Confidence interval level to plot. When style is river provide a list, otherwise a float.
 
-    if show_k_least_calibrated is None:
-        show_k_least_calibrated = len(classes)
+    Returns:
+    Axes containing the plot
+    """
 
-    plots = min(show_k_least_calibrated, len(classes))
 
-    if axes is None:
-        fig, axes = plt.subplots(1, plots, subplot_kw={"aspect": 0.75}, constrained_layout=True, sharex=True, sharey=True, dpi=72)
-    assert len(axes) == plots, f"Wrong amount of axes provided: {plots} needed, but {len(axes)} provided."
+    num_classes, axes = _pre_plot_checks(y_probs, y_preds, y_true, axes, ci, style, show_k_least_calibrated)
 
-    y_true_binarized = label_binarize(y_true, classes=classes)
-    y_preds_binarized = label_binarize(y_preds, classes=classes)
+    y_true_binarized = label_binarize(y_true, classes=np.arange(num_classes))
+    y_preds_binarized = label_binarize(y_preds, classes= np.arange(num_classes))
 
     if metric is None:
-        a = classes
+        a = np.arange(num_classes)
     else:
         metric_values = []
-        for c in classes:
+        for c in np.arange(num_classes):
             probs = np.where(y_preds_binarized[:, c]==0, 1-y_probs[:, c], y_probs[:, c])
             metric_values.append(metric(probs, y_preds_binarized[:, c], y_true_binarized[:, c]))
 
@@ -239,7 +300,9 @@ def class_wise_posterior_reliability_diagram(y_probs, y_preds, y_true, axes:matp
 
         ax.set_title(f"Class {c}")
 
-        posterior_reliability_diagram(probs, y_preds_binarized[:, c], y_true_binarized[:, c], ax, bins, exact=True, style=style)
+        posterior_reliability_diagram(probs, y_preds_binarized[:, c], y_true_binarized[:, c], ax, bins, style=style, ci=ci)
+
+    return axes
 
 # Internal Cell
 
@@ -290,12 +353,6 @@ def confidence_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np
     bins -- Description of amount of bins in which to divide prediction confidences (see `numpy.histogram_bin_edges` for options)
     balanced -- Flag for using balanced accuracy score
     """
-
-    if len(y_probs.shape) == 2:
-        if y_probs.shape[1] == 2:
-            y_probs = y_probs[:, 0]
-        else:
-            y_probs = y_probs.max(axis=1)
 
     bin_indices, edges = utils.get_bin_indices(y_probs, bins, 0.0, 1.0, return_edges=True)
     unique_bin_indices = sorted(np.unique(bin_indices))
