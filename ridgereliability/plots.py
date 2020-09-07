@@ -91,7 +91,7 @@ def _pre_plot_checks(y_probs, y_preds, y_true, ax, ci, style=None, required_axes
     else:
         required_axes = num_classes if required_axes is None else required_axes
         if ax is None:
-            fig, ax = plt.subplots(1, required_axes, subplot_kw={"aspect": 0.75}, constrained_layout=True, sharex=True, sharey=True, dpi=100)
+            fig, ax = plt.subplots(1, required_axes, figsize=(3*required_axes, 3), subplot_kw={"aspect": 0.75}, constrained_layout=True, sharex=True, sharey=True, dpi=100)
         if (required_axes != 1) and (len(ax) != required_axes):
             raise ValueError(f"Wrong amount of axes provided: {required_axes} needed, but {len(ax)} provided.")
 
@@ -298,7 +298,10 @@ def class_wise_posterior_reliability_diagram(y_probs:np.array, y_preds:np.array,
     for ax, c in zip(axes, a):
         probs = np.where(y_preds_binarized[:, c]==0, 1-y_probs[:, c], y_probs[:, c])
 
-        ax.set_title(f"Class {c}")
+        if metric is None:
+            ax.set_title(f"Class {c}")
+        else:
+            ax.set_title(f"Class {c} ({metric_values[c]:.3f})")
 
         posterior_reliability_diagram(probs, y_preds_binarized[:, c], y_true_binarized[:, c], ax, bins, style=style, ci=ci)
 
