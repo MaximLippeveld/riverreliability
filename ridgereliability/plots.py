@@ -319,7 +319,7 @@ def bar_diagram(edges:np.array, bin_accuracies:np.array, bin_confidences:np.arra
     _decorate_ax(ax)
     cmap = clipped_cm(len(bin_accuracies), clip_range=(0.2, 0.7))
 
-    ax.plot([0,1], [0,1], linestyle="--", color=cmap(1), alpha=0.3, linewidth=0.75)
+    ax.plot([0,1], [0,1], linestyle="--", color=cmap(1), alpha=0.9, linewidth=1)
 
     for i, (xi, yi, bi) in enumerate(zip(edges, bin_accuracies, bin_confidences)):
         if np.isnan(bi):
