@@ -34,10 +34,10 @@ np.random.seed(42)
 # experiment parameters
 dataset_config_grid = sklearn.model_selection.ParameterGrid({
         "features": [10, 30, 50],
-        "imbalance": [0.1, 0.5, 1.0, 1.5, 2, 5, 10],
+        "imbalance": [0.1, 0.5, 1.0, 1.5, 2, 5],
         "std": [0.5, 1, 1.5, 2],
         "radius": [.5, 1, 2, 4],
-        "classes": [2, 5, 10, 20]
+        "classes": [2, 5, 10]
 })
 repeats = 50
 samples = 5000
@@ -236,19 +236,6 @@ def compute_error_metrics(args, clf):
     
     # store results
     return pd.DataFrame(error_metrics(y_probs, y_preds, y_test, z_probs))
-
-
-# In[15]:
-
-
-error_metrics(y_probs, y_preds, y_test, z_test[:, y_preds][:, 0])
-
-
-# In[16]:
-
-
-from ridgereliability import plots
-_ = plots.class_wise_posterior_reliability_diagram(y_probs, y_preds, y_test, bins=10)
 
 
 # In[51]:
