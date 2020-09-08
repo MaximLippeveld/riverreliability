@@ -149,8 +149,8 @@ description: "API details."
 <div class="output_area">
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>Accuracy: 0.868
-Balanced accuracy: 0.8682246668791995
+<pre>Accuracy: 0.867
+Balanced accuracy: 0.86824584749782
 </pre>
 </div>
 </div>
@@ -185,7 +185,7 @@ Balanced accuracy: 0.8682246668791995
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="peace" class="doc_header"><code>peace</code><a href="https://github.com/MaximLippeveld/ridgereliability/tree/master/ridgereliability/metrics.py#L22" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>peace</code>(<strong><code>y_probs</code></strong>, <strong><code>y_preds</code></strong>, <strong><code>y_true</code></strong>, <strong><code>samples</code></strong>=<em><code>1000</code></em>, <strong><code>bins</code></strong>=<em><code>'fd'</code></em>)</p>
+<h4 id="peace" class="doc_header"><code>peace</code><a href="https://github.com/MaximLippeveld/ridgereliability/tree/master/ridgereliability/metrics.py#L23" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>peace</code>(<strong><code>y_probs</code></strong>, <strong><code>y_preds</code></strong>, <strong><code>y_true</code></strong>, <strong><code>samples</code></strong>=<em><code>1000</code></em>, <strong><code>bins</code></strong>=<em><code>'fd'</code></em>)</p>
 </blockquote>
 <p>Compute the posterior expected balanced accuracy-based calibration error (PEACE).</p>
 <p>Parameters:
@@ -235,7 +235,7 @@ exp_ce (float): expected calibration error</p>
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>0.05083208494616157</pre>
+<pre>0.08939185163730339</pre>
 </div>
 
 </div>
@@ -264,7 +264,7 @@ exp_ce (float): expected calibration error</p>
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="ece" class="doc_header"><code>ece</code><a href="https://github.com/MaximLippeveld/ridgereliability/tree/master/ridgereliability/metrics.py#L54" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>ece</code>(<strong><code>y_probs</code></strong>, <strong><code>y_preds</code></strong>, <strong><code>y_true</code></strong>, <strong><code>balanced</code></strong>=<em><code>False</code></em>, <strong><code>bins</code></strong>=<em><code>'fd'</code></em>)</p>
+<h4 id="ece" class="doc_header"><code>ece</code><a href="https://github.com/MaximLippeveld/ridgereliability/tree/master/ridgereliability/metrics.py#L55" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>ece</code>(<strong><code>y_probs</code></strong>, <strong><code>y_preds</code></strong>, <strong><code>y_true</code></strong>, <strong><code>balanced</code></strong>=<em><code>False</code></em>, <strong><code>bins</code></strong>=<em><code>'fd'</code></em>)</p>
 </blockquote>
 <p>Compute the expected calibration error (ECE).</p>
 <p>Parameters:
@@ -291,7 +291,7 @@ exp_ce (float): expected calibration error</p>
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">ece</span><span class="p">(</span><span class="n">y_probs</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">y_probs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">y_preds</span><span class="p">],</span> <span class="n">y_preds</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">ece</span><span class="p">(</span><span class="n">y_probs</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">y_preds</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span>
 </pre></div>
 
     </div>
@@ -306,7 +306,7 @@ exp_ce (float): expected calibration error</p>
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>0.04008998620662349</pre>
+<pre>0.036640085206979804</pre>
 </div>
 
 </div>
@@ -335,7 +335,7 @@ exp_ce (float): expected calibration error</p>
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="ece_v2" class="doc_header"><code>ece_v2</code><a href="https://github.com/MaximLippeveld/ridgereliability/tree/master/ridgereliability/metrics.py#L86" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>ece_v2</code>(<strong><code>y_probs</code></strong>, <strong><code>y_preds</code></strong>, <strong><code>y_true</code></strong>, <strong><code>bins</code></strong>=<em><code>'fd'</code></em>)</p>
+<h4 id="ece_v2" class="doc_header"><code>ece_v2</code><a href="https://github.com/MaximLippeveld/ridgereliability/tree/master/ridgereliability/metrics.py#L87" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>ece_v2</code>(<strong><code>y_probs</code></strong>, <strong><code>y_preds</code></strong>, <strong><code>y_true</code></strong>, <strong><code>bins</code></strong>=<em><code>'fd'</code></em>)</p>
 </blockquote>
 <p>Compute the expected calibration error based on the expected posterior balanced accuracy (ECEv2).</p>
 <p>Parameters:
@@ -377,7 +377,7 @@ exp_ce (float): expected calibration error</p>
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>0.03654042284862339</pre>
+<pre>0.0776089365849685</pre>
 </div>
 
 </div>
@@ -406,7 +406,7 @@ exp_ce (float): expected calibration error</p>
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="class_wise_error" class="doc_header"><code>class_wise_error</code><a href="https://github.com/MaximLippeveld/ridgereliability/tree/master/ridgereliability/metrics.py#L112" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>class_wise_error</code>(<strong><code>y_probs</code></strong>, <strong><code>y_preds</code></strong>, <strong><code>y_true</code></strong>, <strong><code>base_error</code></strong>, <strong>*<code>base_error_args</code></strong>, <strong>**<code>base_error_kwargs</code></strong>)</p>
+<h4 id="class_wise_error" class="doc_header"><code>class_wise_error</code><a href="https://github.com/MaximLippeveld/ridgereliability/tree/master/ridgereliability/metrics.py#L113" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>class_wise_error</code>(<strong><code>y_probs</code></strong>, <strong><code>y_preds</code></strong>, <strong><code>y_true</code></strong>, <strong><code>base_error</code></strong>, <strong>*<code>base_error_args</code></strong>, <strong>**<code>base_error_kwargs</code></strong>)</p>
 </blockquote>
 <p>Compute classwise-error as proposed in "Beyond temperature scaling: Obtaining well-calibrated
 multiclass probabilities with Dirichlet calibration" (Kull, 2019).</p>
@@ -451,7 +451,7 @@ exp_ce (float): class-wise expected calibration error</p>
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>0.09603264319876514</pre>
+<pre>0.11975116650496127</pre>
 </div>
 
 </div>

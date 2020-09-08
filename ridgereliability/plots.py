@@ -282,8 +282,9 @@ def class_wise_posterior_reliability_diagram(y_probs:np.array, y_preds:np.array,
 
     num_classes, axes = _pre_plot_checks(y_probs, y_preds, y_true, axes, ci, style, show_k_least_calibrated)
 
-    y_true_binarized = label_binarize(y_true, classes=np.arange(num_classes))
-    y_preds_binarized = label_binarize(y_preds, classes= np.arange(num_classes))
+    one_hot = sklearn.preprocessing.OneHotEncoder(sparse=False, dtype=int)
+    y_true_binarized = one_hot.fit_transform(y_true.reshape(-1, 1))
+    y_preds_binarized = one_hot.fit_transform(y_preds.reshape(-1, 1))
 
     if metric is None:
         a = np.arange(num_classes)
@@ -399,8 +400,9 @@ def class_wise_confidence_reliability_diagram(y_probs:np.array, y_preds:np.array
 
     classes = np.unique(y_true)
 
-    y_true_binarized = label_binarize(y_true, classes=classes)
-    y_preds_binarized = label_binarize(y_preds, classes=classes)
+    one_hot = sklearn.preprocessing.OneHotEncoder(sparse=False, dtype=int)
+    y_true_binarized = one_hot.fit_transform(y_true.reshape(-1, 1))
+    y_preds_binarized = one_hot.fit_transform(y_preds.reshape(-1, 1))
 
     for ax, c in zip(axes, range(len(classes))):
         ax.set_title(f"Class {c}")

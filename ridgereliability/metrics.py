@@ -16,6 +16,7 @@ import sklearn.datasets
 import sklearn.model_selection
 import sklearn.svm
 import sklearn.preprocessing
+import sklearn.utils
 
 # Cell
 
@@ -125,10 +126,10 @@ def class_wise_error(y_probs, y_preds, y_true, base_error, *base_error_args, **b
 
     """
 
-    classes = np.unique(y_preds)
-
-    y_true_binarized = sklearn.preprocessing.label_binarize(y_true, classes=classes)
-    y_preds_binarized = sklearn.preprocessing.label_binarize(y_preds, classes=classes)
+    classes = sklearn.utils.multiclass.unique_labels(y_preds, y_true)
+    one_hot = sklearn.preprocessing.OneHotEncoder(sparse=False, dtype=int)
+    y_true_binarized = one_hot.fit_transform(y_true.reshape(-1, 1))
+    y_preds_binarized = one_hot.fit_transform(y_preds.reshape(-1, 1))
 
     result = 0.
     for c in classes:
