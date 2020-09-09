@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[31]:
 
 
 import sklearn.model_selection
@@ -20,36 +20,39 @@ import os
 import multiprocessing
 from tqdm import trange
 import pickle
-
-
-# In[3]:
-
-
-np.random.seed(42)
+from functools import partial
+import random
 
 
 # In[4]:
 
 
+np.random.seed(42)
+
+
+# In[27]:
+
+
 # experiment parameters
 dataset_config_grid = sklearn.model_selection.ParameterGrid({
-        "features": [10, 30, 50],
-        "imbalance": [0.1, 0.5, 1.0, 1.5, 2, 5],
+        "features": [10, 30],
+        "imbalance": [0.1, 1.0, 1.5, 5],
         "std": [0.5, 1, 1.5, 2],
         "radius": [.5, 1, 2, 4],
         "classes": [2, 5, 10]
 })
-repeats = 50
+
+repeats = 1000
 samples = 5000
 classifiers = [
-    (sklearn.naive_bayes.GaussianNB(), 'Gaussian Naive Bayes'),
-    (sklearn.linear_model.SGDClassifier(loss="log"), 'Linear SVM'),
-    (sklearn.ensemble.RandomForestClassifier(), 'Random Forest'),
-    (sklearn.linear_model.LogisticRegression(), 'Logistic Regression')
+    (sklearn.naive_bayes.GaussianNB, 'Gaussian Naive Bayes'),
+    (partial(sklearn.linear_model.SGDClassifier, loss="log"), 'Linear SVM'),
+    (sklearn.ensemble.RandomForestClassifier, 'Random Forest'),
+    (sklearn.linear_model.LogisticRegression, 'Logistic Regression')
 ]
 
 
-# In[5]:
+# In[17]:
 
 
 def generate_data(num_samples, num_features, num_classes, std, radius, imbalance):
@@ -72,7 +75,18 @@ def generate_data(num_samples, num_features, num_classes, std, radius, imbalance
     assert num_classes <= 2**num_features, f'Too many classes ({num_classes}) for features ({num_features})'
 
     # create centers
-    numbers = np.random.choice(range(2**num_features), size=num_classes, replace=False)
+    
+    numbers = np.empty((num_classes,), dtype=int)
+    i = 0
+    while i < num_classes:
+        # use randrange as it does not explicitly build the range
+        c = random.randrange(0, 2**num_features)
+        
+        # ensure it is unique
+        if c not in numbers:
+            numbers[i] = c
+            i+=1
+        
     centers = np.zeros((num_classes, num_features))
     for i in range(num_classes):
         centers[i] = .5 * radius * np.ones(num_features)
@@ -124,7 +138,7 @@ def generate_data(num_samples, num_features, num_classes, std, radius, imbalance
     return X, y, z
 
 
-# In[8]:
+# In[43]:
 
 
 def fit_and_predict(args, clf, return_prob_matrix=False):
@@ -148,36 +162,25 @@ def fit_and_predict(args, clf, return_prob_matrix=False):
     X_train, X_test, y_train, y_test, z_train, z_test = sklearn.model_selection.train_test_split(X, y, z, test_size=0.2)
 
     # fit the classifier
-    clf.fit(X_train, y_train)
+    model = clf()
+    model.fit(X_train, y_train)
 
     # compute predicted labels
-    y_preds = clf.predict(X_test)
+    y_preds = model.predict(X_test)
 
     # compute predicted probability vectors
-    if hasattr(clf, 'predict_proba'):
-        y_probs = clf.predict_proba(X_test)
+    if hasattr(model, 'predict_proba'):
+        y_probs = model.predict_proba(X_test)
         if not return_prob_matrix:
-            y_probs = y_probs[:, y_preds][:, 0]
+            y_probs = y_probs.max(axis=1)
+#             y_probs = y_probs[:, y_preds][:, 0]
     else:
-        raise ValueError(clf)
+        raise ValueError(model)
 
     return y_probs, y_preds, y_test, z_test
 
 
-# In[13]:
-
-
-class args:
-    features = 2
-    std = 1.
-    radius = 1.5
-    imbalance = 1.
-    classes = 3
-
-y_probs, y_preds, y_test, z_test = fit_and_predict(args(), sklearn.ensemble.RandomForestClassifier(n_estimators=10), return_prob_matrix=True)
-
-
-# In[14]:
+# In[31]:
 
 
 def true_ce(y_probs, z_probs):
@@ -232,7 +235,8 @@ def compute_error_metrics(args, clf):
     y_probs, y_preds, y_test, z_test = fit_and_predict(args, clf, return_prob_matrix=True)
     
     # compute actual probability vectors
-    z_probs = z_test[:, y_preds][:, 0]
+    n_values = np.max(y_test) + 1
+    z_probs = z_test[np.eye(n_values)[y_preds].astype(bool)]
     
     # store results
     return pd.DataFrame(error_metrics(y_probs, y_preds, y_test, z_probs))
