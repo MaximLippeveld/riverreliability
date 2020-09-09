@@ -13,7 +13,24 @@ import sklearn.model_selection
 import sklearn.metrics
 
 
-# In[11]:
+# In[2]:
+
+
+gpus = tf.config.experimental.list_physical_devices('GPU')
+if gpus:
+    try:
+        # Currently, memory growth needs to be the same across GPUs
+        for gpu in gpus:
+            print(gpu)
+            tf.config.experimental.set_memory_growth(gpu, True)
+        logical_gpus = tf.config.experimental.list_logical_devices('GPU')
+        print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+    except RuntimeError as e:
+        # Memory growth must be set before GPUs have been initialized
+        print(e)
+
+
+# In[3]:
 
 
 dev = [d for d in tf.config.experimental.list_logical_devices() if d.device_type=="GPU"][0]
@@ -31,7 +48,7 @@ x_test = (x_test - mean) / (std + 1e-7)
 y_test = tf.keras.utils.to_categorical(y_test)
 
 
-# In[12]:
+# In[5]:
 
 
 with tf.device(dev.name):
@@ -71,7 +88,7 @@ with tf.device(dev.name):
 datagen.fit(x_train)
 
 
-# In[8]:
+# In[ ]:
 
 
 model.fit(
