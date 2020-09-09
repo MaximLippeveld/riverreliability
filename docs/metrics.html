@@ -149,8 +149,8 @@ description: "API details."
 <div class="output_area">
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>Accuracy: 0.867
-Balanced accuracy: 0.86824584749782
+<pre>Accuracy: 0.868
+Balanced accuracy: 0.8682246668791995
 </pre>
 </div>
 </div>
@@ -235,7 +235,7 @@ exp_ce (float): expected calibration error</p>
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>0.08939185163730339</pre>
+<pre>0.05083208494616157</pre>
 </div>
 
 </div>
@@ -306,7 +306,7 @@ exp_ce (float): expected calibration error</p>
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>0.036640085206979804</pre>
+<pre>0.04008998620662349</pre>
 </div>
 
 </div>
@@ -362,7 +362,7 @@ exp_ce (float): expected calibration error</p>
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">ece_v2</span><span class="p">(</span><span class="n">y_probs</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">y_probs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">y_preds</span><span class="p">],</span> <span class="n">y_preds</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">ece_v2</span><span class="p">(</span><span class="n">y_probs</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">y_preds</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span>
 </pre></div>
 
     </div>
@@ -377,7 +377,7 @@ exp_ce (float): expected calibration error</p>
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>0.0776089365849685</pre>
+<pre>0.03654042284862339</pre>
 </div>
 
 </div>
@@ -451,7 +451,7 @@ exp_ce (float): class-wise expected calibration error</p>
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>0.11975116650496127</pre>
+<pre>0.09603264319876514</pre>
 </div>
 
 </div>
