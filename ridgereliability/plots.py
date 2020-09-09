@@ -239,7 +239,7 @@ def posterior_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np.
             # compute the average beta distribution
             conf = confusion_matrix(y_true[selector], y_preds[selector], labels=np.arange(0, num_classes))
             parameters = get_beta_parameters(conf)
-            distributions[i] = beta_avg_pdf(x, parameters)
+            distributions[i] = np.clip(beta_avg_pdf(x, parameters, fft=True), 0, None)
         else:
             # compute the exact beta distribution
             correct = (y_true[selector] == y_preds[selector]).sum()
