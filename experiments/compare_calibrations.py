@@ -435,7 +435,7 @@ df = pd.DataFrame(calibration_metrics).T
 # In[ ]:
 
 
-dump(os.path.join(output_dir, "calibration_metrics.dat"), df)
+dump(df, os.path.join(output_dir, "calibration_metrics.dat"))
 
 
 # In[ ]:
