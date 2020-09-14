@@ -115,7 +115,7 @@ if f is F.TRAIN:
         loss=tf.keras.losses.CategoricalCrossentropy(),
         metrics=['accuracy'])
 
-    model.save_weights('models/model.h5')
+    model.save_weights(os.path.join(output_dir, 'model.h5'))
 
 
 # In[ ]:
@@ -140,50 +140,18 @@ if f is F.TRAIN:
 
 
 if f is F.TRAIN:
+    logging.info("Training baseline on full train set")
+    
+    datagen.fit(x_train)
     model.fit(
-        datagen.fit(x_train).flow(x_train, y_train, batch_size=128),
+        datagen.flow(x_train, y_train, batch_size=128),
         epochs=epochs,
         validation_data=(x_test, y_test),
         steps_per_epoch=np.ceil(len(x_train)/128)
     )
-
-
-# In[ ]:
-
-
-x_train_s, x_val, y_train_s, y_val = sklearn.model_selection.train_test_split(x_train, y_train.argmax(axis=1), test_size=0.25)
-
-mean = x_train_s.mean()
-std = x_train_s.std()
-
-x_train_s = (x_train_s - mean) / (std + 1e-7)
-y_train_s = tf.keras.utils.to_categorical(y_train_s)
-
-x_val = (x_val - mean) / (std + 1e-7)
-y_val = tf.keras.utils.to_categorical(y_val)
-
-
-# In[ ]:
-
-
-if f is F.TRAIN:
-    model.load_weights("models/model.h5")
-
-    model.fit(
-        datagen.fit(x_train_s).flow(x_train, y_train, batch_size=128),
-        epochs=epochs,
-        validation_data=(x_test, y_test),
-        steps_per_epoch=np.ceil(len(x_train)/128)
-    )
-
-    model.save('models/cifar10_densenet_baseline_s.h5')
-
-
-# In[ ]:
-
-
-if f is F.TRAIN:
-    exit()
+    
+    models["baseline"] = model
+    model.save(os.path.join(output_dir, 'baseline.h5'))
 
 
 # In[ ]:
@@ -221,6 +189,41 @@ def evaluate_model(model, x_test, y_test, keras=False, bins=15):
 
 
 calibration_metrics["baseline"] = evaluate_model(models["baseline"], x_test, y_test, keras=True)
+del models["baseline"]
+
+
+# In[ ]:
+
+
+x_train_s, x_val, y_train_s, y_val = sklearn.model_selection.train_test_split(x_train, y_train.argmax(axis=1), test_size=0.25)
+
+mean = x_train_s.mean()
+std = x_train_s.std()
+
+x_train_s = (x_train_s - mean) / (std + 1e-7)
+y_train_s = tf.keras.utils.to_categorical(y_train_s)
+
+x_val = (x_val - mean) / (std + 1e-7)
+y_val = tf.keras.utils.to_categorical(y_val)
+
+
+# In[ ]:
+
+
+if f is F.TRAIN:
+    logging.info("Training baseline on reduced train set")
+    model.load_weights("models/model.h5")
+
+    datagen.fit(x_train_s)
+    model.fit(
+        datagen.flow(x_train, y_train, batch_size=128),
+        epochs=epochs,
+        validation_data=(x_test, y_test),
+        steps_per_epoch=np.ceil(len(x_train)/128)
+    )
+
+    models["baseline_s"] = model
+    model.save(os.path.join(output_dir, 'baseline_s.h5'))
 
 
 # In[ ]:
@@ -330,6 +333,12 @@ calibrators = {}
 # In[ ]:
 
 
+logging.info("Temperature scaling started")
+
+
+# In[ ]:
+
+
 calibrator = tempscaling.TemperatureScaling(reg_lambda_list=reg_lambda_list, reg_mu_list=reg_mu_list, logit_constant=0.0)
 models["temperature"] = CalibratedModel(models["baseline_s"], calibrator)
 
@@ -349,6 +358,18 @@ calibration_metrics["temperature"] = evaluate_model(models["temperature"], x_tes
 # In[ ]:
 
 
+logging.info("Temperature scaling ended")
+
+
+# In[ ]:
+
+
+logging.info("Dirichlet calibration started")
+
+
+# In[ ]:
+
+
 calibrator = DirichletCalibrator(matrix_type="full", l2=0.1)
 models["dirichlet"] = CalibratedModel(models["baseline_s"], calibrator)
 models["dirichlet"].fit(x_train_s, y_train_s.argmax(axis=1), X_val=x_val, y_val=y_val.argmax(axis=1), verbose=0)
@@ -358,6 +379,18 @@ models["dirichlet"].fit(x_train_s, y_train_s.argmax(axis=1), X_val=x_val, y_val=
 
 
 calibration_metrics["dirichlet"] = evaluate_model(models["dirichlet"], x_test, y_test)
+
+
+# In[ ]:
+
+
+logging.info("Dirichlet calibration ended")
+
+
+# In[ ]:
+
+
+logging.info("Vector scaling started")
 
 
 # In[ ]:
@@ -377,13 +410,19 @@ calibration_metrics["vector"] = evaluate_model(models["vector"], x_test, y_test)
 # In[ ]:
 
 
-for k, model in models:
+logging.info("Vector scaling ended")
+
+
+# In[ ]:
+
+
+for k, model in models.items():
     if type(model) is tf.python.keras.engine.functional.Functional:
         fname = os.path.join(output_dir, f"{k}.h5")
         model.save(fname)
     else:
         fname = os.path.join(output_dir, f"{k}.h5")
-        model.calibrator = None
+        model.base_estimator = None
         dump(model, fname)
 
 
