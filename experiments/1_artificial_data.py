@@ -22,6 +22,8 @@ from tqdm import trange
 import pickle
 from functools import partial
 import random
+import warnings
+warnings.filterwarnings("ignore")
 
 
 # In[4]:
@@ -153,7 +155,9 @@ def fit_and_predict(args, clf, return_prob_matrix=False):
 
     Returns:
         tuple -- contains prediction probabilities on test set, predictions on test set, true test labels and true class probabilities
-    """    
+    """   
+
+    logging.debug("Fit and predict") 
     
     # generate the data
     X, y, z = generate_data(samples, args.features, args.classes, args.std, args.radius, args.imbalance)
@@ -176,6 +180,8 @@ def fit_and_predict(args, clf, return_prob_matrix=False):
 #             y_probs = y_probs[:, y_preds][:, 0]
     else:
         raise ValueError(model)
+    
+    logging.debug("Fit and predict ready") 
 
     return y_probs, y_preds, y_test, z_test
 
@@ -239,10 +245,13 @@ def compute_error_metrics(args, clf):
     z_probs = z_test[np.eye(n_values)[y_preds].astype(bool)]
     
     # store results
-    return pd.DataFrame(error_metrics(y_probs, y_preds, y_test, z_probs))
+
+    df = pd.DataFrame(error_metrics(y_probs, y_preds, y_test, z_probs))
+
+    return df
 
 
-# In[51]:
+# In[6]:
 
 
 def run_one_configuration(args, clfs=classifiers, output=None, save=True):
@@ -273,17 +282,17 @@ def run_one_configuration(args, clfs=classifiers, output=None, save=True):
 
         # pull results from pool
         results = {k: [] for _, k in clfs}
-        progbars = {
-            k: trange(repeats, position=i, desc=k)
-            for i, (_, k) in enumerate(clfs)
-        }
-        for name, promise in promises:
+        counter = {}
+        for i, (name, promise) in enumerate(promises):
             # progress bar update
             try:
                 results[name].append(promise.get())
             except Exception as e:
-                logger.exception("Error in pool thread.")
-            progbars[name].update(1)
+                logger.exception(f"Error in pool thread. ({i, name})")
+            
+            counter[name] = counter.get(name, 0) + 1
+            if (i % 10) == 0:
+                logging.info(f"Progress {counter}")
 
         results = {k: pd.concat(v) for k, v in results.items() if len(v) > 0}
 
@@ -349,6 +358,7 @@ def run_all_configurations(args, clfs=classifiers):
         vars(args).update(instance)
 
         filename = os.path.join(args.output_dir, f"{i}.dat")
+        logging.debug(f"Running args: {args}")
         run_one_configuration(args, clfs, output=filename)
 
         # dump meta data (dump at every stap to have intermediate results)
@@ -361,13 +371,12 @@ def run_all_configurations(args, clfs=classifiers):
             pickle.dump(pd.DataFrame(runs), pkl)
 
 
-# In[53]:
+# In[4]:
 
 
 if __name__ == "__main__":
     import argparse
     import shutil
-    logging.basicConfig(level=logging.DEBUG)
     
     parser = argparse.ArgumentParser()
     parser.add_argument('--n-processes', type=int, default=16, help='number of processes to create in pool')
@@ -377,8 +386,11 @@ if __name__ == "__main__":
     parser.add_argument('--analysis', type=str, default=None, help="previous analysis")
     parser.add_argument('--remove', action="store_true", help="remove output dir if it exists")
     parser.add_argument('--dummy', action="store_true", help="use a dummy classifier")
+    parser.add_argument('--debug', action="store_true")
     
     args = parser.parse_args()
+    
+    logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
     
     # create output dir if neccesary
     if "output_dir" in args:

@@ -140,4 +140,5 @@ checklink/cookies.txt
 .gitconfig
 
 *.pdf
+plots/
 
