@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[2]:
+# In[1]:
 
 
 import tensorflow as tf
@@ -22,14 +22,14 @@ from sklearn.utils import check_X_y, indexable, column_or_1d
 from sklearn.utils.validation import check_is_fitted
 
 
-# In[3]:
+# In[2]:
 
 
 import logging
 logging.basicConfig(level=logging.INFO)
 
 
-# In[4]:
+# In[3]:
 
 
 from enum import Enum
@@ -38,14 +38,14 @@ class F(Enum):
     EVAL = 2
 
 
-# In[5]:
+# In[4]:
 
 
 f = F.TRAIN
-epochs = 1
+epochs = 40
 
 
-# In[6]:
+# In[5]:
 
 
 if f is F.TRAIN:
@@ -54,10 +54,10 @@ if f is F.TRAIN:
     parser.add_argument("--out", type=str, required=True)
     output_dir = parser.parse_args().out
 elif f is F.EVAL:
-    output_dir = "models"
+    output_dir = "/home/maximl/Data/Experiment_data/results/riverrel/models1"
 
 
-# In[ ]:
+# In[6]:
 
 
 if f is F.TRAIN:
@@ -77,7 +77,7 @@ if f is F.TRAIN:
     dev = [d for d in tf.config.experimental.list_logical_devices() if d.device_type=="GPU"][0]
 
 
-# In[ ]:
+# In[8]:
 
 
 (x_train, y_train), (x_test, y_test) = tf.keras.datasets.cifar10.load_data()
@@ -92,13 +92,13 @@ x_train = (x_train - mean) / (std + 1e-7)
 y_train = tf.keras.utils.to_categorical(y_train)
 
 
-# In[ ]:
+# In[9]:
 
 
 models = {}
 
 
-# In[ ]:
+# In[10]:
 
 
 if f is F.TRAIN:
@@ -118,7 +118,7 @@ if f is F.TRAIN:
     model.save_weights(os.path.join(output_dir, 'model.h5'))
 
 
-# In[ ]:
+# In[11]:
 
 
 if f is F.TRAIN:
@@ -136,7 +136,7 @@ if f is F.TRAIN:
                     vertical_flip=False)  # randomly flip images
 
 
-# In[ ]:
+# In[12]:
 
 
 if f is F.TRAIN:
@@ -154,19 +154,19 @@ if f is F.TRAIN:
     model.save(os.path.join(output_dir, 'baseline.h5'))
 
 
-# In[ ]:
+# In[14]:
 
 
 calibration_metrics = {}
 
 
-# In[ ]:
+# In[15]:
 
 
-def evaluate_model(model, x_test, y_test, keras=False, bins=15):
+def evaluate_model(model, x_test, y_test, keras=False, bins=15, verbose=0, y_probs=None):
     
     if keras:
-        y_probs = model.predict(x_test, batch_size=128, verbose=0)
+        y_probs = model.predict(x_test, batch_size=128, verbose=verbose)
     else:
         y_probs = model.predict_proba(x_test)
     y_probs_max = y_probs.max(axis=1)
@@ -185,10 +185,16 @@ def evaluate_model(model, x_test, y_test, keras=False, bins=15):
     }
 
 
-# In[ ]:
+# In[43]:
 
 
 calibration_metrics["baseline"] = evaluate_model(models["baseline"], x_test, y_test, keras=True)
+
+
+# In[ ]:
+
+
+
 del models["baseline"]
 
 
@@ -212,7 +218,7 @@ y_val = tf.keras.utils.to_categorical(y_val)
 
 if f is F.TRAIN:
     logging.info("Training baseline on reduced train set")
-    model.load_weights("models/model.h5")
+    model.load_weights(os.path.join(output_dir, "model.h5"))
 
     datagen.fit(x_train_s)
     model.fit(
@@ -416,26 +422,18 @@ logging.info("Vector scaling ended")
 # In[ ]:
 
 
-for k, model in models.items():
-    if type(model) is tf.python.keras.engine.functional.Functional:
-        fname = os.path.join(output_dir, f"{k}.h5")
-        model.save(fname)
-    else:
-        fname = os.path.join(output_dir, f"{k}.h5")
-        model.base_estimator = None
-        dump(model, fname)
-
-
-# In[ ]:
-
-
-df = pd.DataFrame(calibration_metrics).T
-
-
-# In[ ]:
-
-
-dump(df, os.path.join(output_dir, "calibration_metrics.dat"))
+if f is F.TRAIN:
+    for k, model in models.items():
+        if type(model) is tf.python.keras.engine.functional.Functional:
+            fname = os.path.join(output_dir, f"{k}.h5")
+            model.save(fname)
+        else:
+            fname = os.path.join(output_dir, f"{k}.h5")
+            model.base_estimator = None
+            dump(model, fname)
+            
+    df = pd.DataFrame(calibration_metrics).T
+    dump(df, os.path.join(output_dir, "calibration_metrics.dat"))
 
 
 # In[ ]:
@@ -445,31 +443,38 @@ if f is F.TRAIN:
     exit()
 
 
-# In[ ]:
+# In[21]:
+
+
+results_dir = "/home/maximl/Data/Experiment_data/results/riverrel/models1"
+df = load(os.path.join(results_dir, "calibration_metrics.dat"))
+
+
+# In[22]:
 
 
 df[["ece", "peace", "class_wise_ece", "class_wise_peace"]].plot.bar().legend(loc='center left',bbox_to_anchor=(1.0, 0.15))
 
 
-# In[ ]:
+# In[23]:
 
 
 df.index[df["peace"].argmin()], df["peace"].min()
 
 
-# In[ ]:
+# In[24]:
 
 
 df.index[df["class_wise_peace"].argmin()], df["class_wise_peace"].min()
 
 
-# In[ ]:
+# In[25]:
 
 
 df.index[df["ece"].argmin()], df["ece"].min()
 
 
-# In[ ]:
+# In[26]:
 
 
 df.index[df["class_wise_ece"].argmin()], df["class_wise_ece"].min()
