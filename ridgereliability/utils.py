@@ -7,6 +7,8 @@ __all__ = ['get_bin_indices', 'binning']
 import numpy as np
 import scipy.stats
 from typing import Callable
+import warnings
+import logging
 
 # Cell
 
