@@ -155,9 +155,7 @@ def fit_and_predict(args, clf, return_prob_matrix=False):
 
     Returns:
         tuple -- contains prediction probabilities on test set, predictions on test set, true test labels and true class probabilities
-    """   
-
-    logging.debug("Fit and predict") 
+    """    
     
     # generate the data
     X, y, z = generate_data(samples, args.features, args.classes, args.std, args.radius, args.imbalance)
@@ -180,8 +178,6 @@ def fit_and_predict(args, clf, return_prob_matrix=False):
 #             y_probs = y_probs[:, y_preds][:, 0]
     else:
         raise ValueError(model)
-    
-    logging.debug("Fit and predict ready") 
 
     return y_probs, y_preds, y_test, z_test
 
@@ -215,15 +211,16 @@ def true_ce(y_probs, z_probs):
 def error_metrics(y_probs, y_preds, y_test, z_probs):
     
     y_probs_max = y_probs.max(axis=1)
+    bins = 15
     
     return {
         'true_ce': [true_ce(y_probs_max, z_probs)],
-        'ece': [metrics.ece(y_probs_max, y_preds, y_test)],
-        'ece_balanced': [metrics.ece(y_probs_max, y_preds, y_test, balanced=True)],
-        'peace': [metrics.peace(y_probs_max, y_preds, y_test)],
-        'class_wise_ece': [metrics.class_wise_error(y_probs, y_preds, y_test, metrics.ece)],
-        'class_wise_ece_balanced': [metrics.class_wise_error(y_probs, y_preds, y_test, metrics.ece, balanced=True)],
-        'class_wise_peace': [metrics.class_wise_error(y_probs, y_preds, y_test, metrics.peace)],
+        'ece': [metrics.ece(y_probs_max, y_preds, y_test, bins=bins)],
+        'ece_balanced': [metrics.ece(y_probs_max, y_preds, y_test, balanced=True, bins=bins)],
+        'peace': [metrics.peace(y_probs_max, y_preds, y_test, bins=bins)],
+        'class_wise_ece': [metrics.class_wise_error(y_probs, y_preds, y_test, metrics.ece, bins=bins)],
+        'class_wise_ece_balanced': [metrics.class_wise_error(y_probs, y_preds, y_test, metrics.ece, balanced=True, bins=bins)],
+        'class_wise_peace': [metrics.class_wise_error(y_probs, y_preds, y_test, metrics.peace, bins=bins)],
     }
 
             
@@ -245,10 +242,7 @@ def compute_error_metrics(args, clf):
     z_probs = z_test[np.eye(n_values)[y_preds].astype(bool)]
     
     # store results
-
-    df = pd.DataFrame(error_metrics(y_probs, y_preds, y_test, z_probs))
-
-    return df
+    return pd.DataFrame(error_metrics(y_probs, y_preds, y_test, z_probs))
 
 
 # In[6]:
@@ -288,10 +282,10 @@ def run_one_configuration(args, clfs=classifiers, output=None, save=True):
             try:
                 results[name].append(promise.get())
             except Exception as e:
-                logger.exception(f"Error in pool thread. ({i, name})")
+                logger.exception("Error in pool thread.")
             
             counter[name] = counter.get(name, 0) + 1
-            if (i % 10) == 0:
+            if (i % 100)==0:
                 logging.info(f"Progress {counter}")
 
         results = {k: pd.concat(v) for k, v in results.items() if len(v) > 0}
