@@ -132,7 +132,7 @@ def class_wise_error(y_probs, y_preds, y_true, base_error, *base_error_args, **b
 
     result = 0.
     for c in classes:
-        probs = np.where(y_preds_binarized[:, c]==0, 1-y_probs[:, c], y_probs[:, c])
-        result += base_error(probs, y_preds_binarized[:, c], y_true_binarized[:, c], *base_error_args, **base_error_kwargs)
+#         probs = np.where(y_preds_binarized[:, c]==0, 1-y_probs[:, c], y_probs[:, c])
+        result += base_error(y_probs[:, c], y_preds_binarized[:, c], y_true_binarized[:, c], *base_error_args, **base_error_kwargs)
 
     return result/len(classes)
