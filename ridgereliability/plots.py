@@ -217,7 +217,7 @@ def posterior_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np.
 
     confidence_levels = np.empty((len(unique_bin_indices),), dtype=np.float32) # store mean confidence
 
-    if num_classes > 2:
+    if len(np.unique(y_preds)) > 1:
         # the beta distribution will be the average of the per-class distribution
         n_samples = 10000
         distributions = np.empty((len(unique_bin_indices), n_samples), dtype=np.float32) # store beta parameters
@@ -235,9 +235,9 @@ def posterior_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np.
         # set the confidence level to the average confidence reported in the bin
         confidence_levels[i] = y_probs[selector].mean()
 
-        if num_classes > 2:
+        if len(np.unique(y_preds)) > 1:
             # compute the average beta distribution
-            conf = confusion_matrix(y_true[selector], y_preds[selector], labels=np.arange(0, num_classes))
+            conf = confusion_matrix(y_true[selector], y_preds[selector])#, labels=np.arange(0, num_classes))
             parameters = get_beta_parameters(conf)
             distributions[i] = np.clip(beta_avg_pdf(x, parameters, fft=True), 0, None)
         else:
@@ -282,29 +282,25 @@ def class_wise_posterior_reliability_diagram(y_probs:np.array, y_preds:np.array,
 
     num_classes, axes = _pre_plot_checks(y_probs, y_preds, y_true, axes, ci, style, show_k_least_calibrated)
 
-    one_hot = sklearn.preprocessing.OneHotEncoder(sparse=False, dtype=int)
-    y_true_binarized = one_hot.fit_transform(y_true.reshape(-1, 1))
-    y_preds_binarized = one_hot.fit_transform(y_preds.reshape(-1, 1))
-
     if metric is None:
         a = np.arange(num_classes)
     else:
         metric_values = []
         for c in np.arange(num_classes):
-            probs = np.where(y_preds_binarized[:, c]==0, 1-y_probs[:, c], y_probs[:, c])
-            metric_values.append(metric(probs, y_preds_binarized[:, c], y_true_binarized[:, c]))
+            selector = y_preds == c
+            metric_values.append(metric(y_probs[selector, c], y_preds[selector], y_true[selector]))
 
         a = np.argsort(metric_values)[::-1][:show_k_least_calibrated]
 
     for ax, c in zip(axes, a):
-        probs = np.where(y_preds_binarized[:, c]==0, 1-y_probs[:, c], y_probs[:, c])
+        selector = y_preds == c
 
         if metric is None:
             ax.set_title(f"Class {c}")
         else:
             ax.set_title(f"Class {c} ({metric_values[c]:.3f})")
 
-        posterior_reliability_diagram(probs, y_preds_binarized[:, c], y_true_binarized[:, c], ax, bins, style=style, ci=ci)
+        posterior_reliability_diagram(y_probs[selector, c], y_preds[selector], y_true[selector], ax, bins, style=style, ci=ci)
 
     return axes
 
@@ -372,13 +368,6 @@ def confidence_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np
     for bin_idx in unique_bin_indices:
         selector = bin_indices == bin_idx
 
-        C = confusion_matrix(y_true[selector], y_preds[selector])
-        with np.errstate(divide='ignore', invalid='ignore'):
-            per_class = np.diag(C) / C.sum(axis=1)
-        per_class = per_class[~np.isnan(per_class)]
-        if len(per_class) < 2:
-            continue
-
         mean_confidences[bin_idx-1] = np.mean(y_probs[selector])
         bin_metric[bin_idx-1] = metric(y_true[selector], y_preds[selector])
 
@@ -386,7 +375,7 @@ def confidence_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np
 
 # Cell
 
-def class_wise_confidence_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np.array, axes:matplotlib.axes.Axes, bins="fd", balanced:bool=True):
+def class_wise_confidence_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np.array, axes:matplotlib.axes.Axes, bins="fd"):
     """Plot a class-wise confidence reliability diagram.
 
     Arguments:
@@ -400,11 +389,9 @@ def class_wise_confidence_reliability_diagram(y_probs:np.array, y_preds:np.array
 
     classes = np.unique(y_true)
 
-    one_hot = sklearn.preprocessing.OneHotEncoder(sparse=False, dtype=int)
-    y_true_binarized = one_hot.fit_transform(y_true.reshape(-1, 1))
-    y_preds_binarized = one_hot.fit_transform(y_preds.reshape(-1, 1))
-
     for ax, c in zip(axes, range(len(classes))):
         ax.set_title(f"Class {c}")
-        probs = np.where(y_preds_binarized[:, c]==0, 1-y_probs[:, c], y_probs[:, c])
-        confidence_reliability_diagram(probs, y_preds_binarized[:, c], y_true_binarized[:, c], ax, bins, balanced)
+
+        selector = y_preds == c
+
+        confidence_reliability_diagram(y_probs[selector, c], y_preds[selector], y_true[selector], ax, bins, balanced=False)

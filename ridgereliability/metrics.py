@@ -36,14 +36,20 @@ def peace(y_probs, y_preds, y_true, samples=1000, bins="fd"):
 
     # define the bin function
     def bin_func(y_probs_bin, y_preds_bin, y_true_bin):
-        # estimate beta parameters
-        confusion = sklearn.metrics.confusion_matrix(y_true_bin, y_preds_bin)
-        params = ridgereliability.beta.get_beta_parameters(confusion)
 
-        # approximate the integral using Simpson's rule
         xs = np.linspace(0, 1, samples)
         conf = y_probs_bin.mean()
-        ys = abs(xs - conf) * ridgereliability.beta.beta_avg_pdf(xs, params, fft=True)
+
+        if len(np.unique(y_preds_bin)) > 1:
+            # estimate beta parameters
+            confusion = sklearn.metrics.confusion_matrix(y_true_bin, y_preds_bin)
+            params = ridgereliability.beta.get_beta_parameters(confusion)
+            ys = abs(xs - conf) * ridgereliability.beta.beta_avg_pdf(xs, params, fft=True)
+        else:
+            params = sum(y_preds_bin == y_true_bin)+1, sum(y_preds_bin != y_true_bin)+1
+            ys = abs(xs - conf) * scipy.stats.beta.pdf(xs, params[0], params[1])
+
+        # approximate the integral using Simpson's rule
         return scipy.integrate.simps(ys, xs)
 
     # compute the full result
@@ -132,7 +138,8 @@ def class_wise_error(y_probs, y_preds, y_true, base_error, *base_error_args, **b
 
     result = 0.
     for c in classes:
-#         probs = np.where(y_preds_binarized[:, c]==0, 1-y_probs[:, c], y_probs[:, c])
-        result += base_error(y_probs[:, c], y_preds_binarized[:, c], y_true_binarized[:, c], *base_error_args, **base_error_kwargs)
+        selector = y_preds == c
+
+        result += base_error(y_probs[selector, c], y_preds[selector], y_true[selector], *base_error_args, **base_error_kwargs)
 
     return result/len(classes)

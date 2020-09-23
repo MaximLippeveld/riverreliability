@@ -80,5 +80,5 @@ def binning(y_probs:np.array, y_preds:np.array, y_true:np.array, bin_indices:np.
         y_probs_bin, y_preds_bin, y_true_bin = y_probs[bin_indices==i], y_preds[bin_indices==i], y_true[bin_indices==i]
 
         # update current estimate
-        result += len(y_probs_bin) / y_probs.shape[0] * bin_func(y_probs_bin, y_preds_bin, y_true_bin)
+        result += (len(y_probs_bin) / y_probs.shape[0]) * bin_func(y_probs_bin, y_preds_bin, y_true_bin)
     return result
