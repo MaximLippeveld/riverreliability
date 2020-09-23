@@ -72,8 +72,8 @@ def binning(y_probs:np.array, y_preds:np.array, y_true:np.array, bin_indices:np.
     # check inputs
     assert len(y_probs.shape) == 1 and y_probs.dtype in [np.float, np.float32], 'Predicted class probabilties should be an array of floats'
     assert all(y_probs >= 0) and all(y_probs <= 1), 'Predicted class probabilities should lie between 0 and 1'
-    assert len(y_preds.shape) == 1 and y_preds.dtype == np.int, 'Predicted class labels should be an array of integers'
-    assert len(y_true.shape) == 1 and y_true.dtype == np.int, 'True class labels should be an array of integers'
+    assert len(y_preds.shape) == 1, 'Predicted class labels should be a 1-D array'
+    assert len(y_true.shape) == 1, 'True class labels should be a 1-D array'
 
     result = 0.
     for i in np.unique(bin_indices):

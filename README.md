@@ -47,7 +47,7 @@ To get an insight into calibration we can look at the posterior reliability diag
 We can plot the diagrams aggregated over all classes:
 
 ```python
-ax = ridgereliability.plots.posterior_reliability_diagram(y_probs.max(axis=1), y_probs.argmax(axis=1), y_test, style="river", bins="fd")
+ax = ridgereliability.plots.river_reliability_diagram(y_probs.max(axis=1), y_probs.argmax(axis=1), y_test, bins="fd")
 
 peace_metric = ridgereliability.metrics.peace(y_probs.max(axis=1), y_probs.argmax(axis=1), y_test)
 ax.set_title(f"PEACE: {peace_metric:.4f}")
@@ -66,10 +66,10 @@ import matplotlib.pyplot as plt
 ```
 
 ```python
-axes = ridgereliability.plots.class_wise_posterior_reliability_diagram(y_probs, y_probs.argmax(axis=1), y_test, bins=15)
+axes = ridgereliability.plots.class_wise_river_reliability_diagram(y_probs, y_probs.argmax(axis=1), y_test, bins=15)
 
 peace_metric = ridgereliability.metrics.class_wise_error(y_probs, y_probs.argmax(axis=1), y_test, base_error=ridgereliability.metrics.peace)
-_ = plt.suptitle(f"PEACE: {peace_metric:.4f}", y=0.85)
+_ = plt.suptitle(f"PEACE: {peace_metric:.4f}")
 ```
 
 

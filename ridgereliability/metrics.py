@@ -133,13 +133,13 @@ def class_wise_error(y_probs, y_preds, y_true, base_error, *base_error_args, **b
     """
 
     classes = sklearn.utils.multiclass.unique_labels(y_preds, y_true)
-    y_true_binarized = np.eye(np.max(classes) + 1, dtype=int)[y_true]
-    y_preds_binarized = np.eye(np.max(classes) + 1, dtype=int)[y_preds]
 
     result = 0.
-    for c in classes:
+    for i, c in enumerate(classes):
         selector = y_preds == c
+        if sum(selector) == 0:
+            continue
 
-        result += base_error(y_probs[selector, c], y_preds[selector], y_true[selector], *base_error_args, **base_error_kwargs)
+        result += base_error(y_probs[selector, i], y_preds[selector], y_true[selector], *base_error_args, **base_error_kwargs)
 
     return result/len(classes)
