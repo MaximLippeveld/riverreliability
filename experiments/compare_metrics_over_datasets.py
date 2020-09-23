@@ -31,6 +31,15 @@ import time
 from joblib import load, dump
 
 
+# In[ ]:
+
+
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("--n-processes", type=int, required=True)
+n_procs = parser.parse_args().n_processes
+
+
 # In[3]:
 
 
@@ -147,7 +156,7 @@ def get_cv_metrics_for_model_and_task(model_id, task_id, pool, n_repeats):
 # In[12]:
 
 
-with multiprocessing.Pool(processes=multiprocessing.cpu_count()) as pool:
+with multiprocessing.Pool(processes=n_procs) as pool:
     
     output_file = f"metrics_{int(time.time())}.dat"
     logging.info(f"Output to {output_file}")
@@ -171,19 +180,25 @@ with multiprocessing.Pool(processes=multiprocessing.cpu_count()) as pool:
 exit()
 
 
-# In[ ]:
+# In[13]:
+
+
+df = load("metrics_1600886418.dat")
+
+
+# In[14]:
 
 
 grouped_df = df.groupby(["model_id", "task_id", "repeat"]).aggregate("mean").drop(columns=["fold"]).reset_index()
 
 
-# In[ ]:
+# In[15]:
 
 
 grouped_df
 
 
-# In[ ]:
+# In[22]:
 
 
 dfs = []
@@ -196,25 +211,25 @@ for col in grouped_df.iloc[:, 3:]:
 long_df = pandas.concat(dfs)
 
 
-# In[ ]:
+# In[23]:
 
 
-long_df
+long_df.head()
 
 
-# In[ ]:
+# In[24]:
 
 
 seaborn.displot(data=long_df[long_df["metric"].isin(["ece", "ece_balanced", "peace"])], x="value", col="metric", rug=True, kind="kde")
 
 
-# In[ ]:
+# In[25]:
 
 
 seaborn.boxplot(data=long_df[long_df["metric"].isin(["ece", "ece_balanced", "peace"])], y="value", x="metric")
 
 
-# In[ ]:
+# In[26]:
 
 
 seaborn.lineplot(data=long_df[long_df["metric"].isin(["ece", "ece_balanced", "peace"])], y="value", x="metric", hue="subject", err_style="bars", palette="tab10")
