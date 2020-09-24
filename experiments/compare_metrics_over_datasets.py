@@ -34,36 +34,43 @@ from joblib import load, dump
 # In[3]:
 
 
-import argparse
-parser = argparse.ArgumentParser()
-parser.add_argument("--n-processes", type=int, required=True)
-n_procs = parser.parse_args().n_processes
+if get_ipython().__class__.__name__ != 'ZMQInteractiveShell':
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--n-processes", type=int, required=True)
+    n_procs = parser.parse_args().n_processes
+else:
+    n_procs = multiprocessing.cpu_count()
 
 
-# In[ ]:
+# In[4]:
 
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(asctime)s - %(message)s')
 
 
-# In[ ]:
+# In[5]:
 
 
 numpy.random.seed(42)
 
 
-# In[ ]:
+# In[6]:
 
 
-TASKS = [9983, 9952, 3899, 219, 3954, 14964, 32, 6, 3510, 40]
+TASKS = [9983, 9952, 3899, 219, 3954, 14964, 32, 6, 3510, 40, 9950, 53, 3512, 12, 3962, 39, 3577, 145682, 3794, 146824]
 
 
-# In[ ]:
+# In[7]:
 
 
 def load_openml_task(task_id):
     task = openml.tasks.get_task(task_id)
     X, y = task.get_X_and_y("dataframe")
+    
+    X_enc = sklearn.preprocessing.OrdinalEncoder().fit_transform(X.values)
+    X = pandas.DataFrame(X_enc, columns=X.columns, index=X.index)
+    
     n_repeats, n_folds, n_samples = task.get_split_dimensions()
 
     folds = numpy.empty((len(X)), dtype=int)
@@ -81,7 +88,7 @@ def load_openml_task(task_id):
     return X, y, splitter        
 
 
-# In[ ]:
+# In[10]:
 
 
 MODELS = {
@@ -93,11 +100,10 @@ MODELS = {
 }
 
 
-# In[ ]:
+# In[11]:
 
 
 def get_fold_metrics_for_model(row, Xt, yt, Xv, yv):
-
     # get and fit fresh model
     model = sklearn.base.clone(MODELS[row["model_id"]])
     model.fit(Xt, yt)
@@ -123,7 +129,7 @@ def get_fold_metrics_for_model(row, Xt, yt, Xv, yv):
     return row
 
 
-# In[ ]:
+# In[12]:
 
 
 def get_cv_metrics_for_model_and_task(model_id, task_id, pool, n_repeats, counter, start_at):
@@ -136,8 +142,6 @@ def get_cv_metrics_for_model_and_task(model_id, task_id, pool, n_repeats, counte
             counter += 1
             if counter < start_at:
                 continue
-            
-            numpy.random.seed(j)
             
             row = {
                 "fold": i,
@@ -159,12 +163,12 @@ def get_cv_metrics_for_model_and_task(model_id, task_id, pool, n_repeats, counte
     return promises, counter
 
 
-# In[ ]:
+# In[13]:
 
 
 with multiprocessing.Pool(processes=n_procs) as pool:
     
-    start_at = 4368
+    start_at = 0
     
     output_file = f"metrics_{int(time.time())}.dat"
     logging.info(f"Output to {output_file}")
@@ -173,7 +177,7 @@ with multiprocessing.Pool(processes=n_procs) as pool:
     counter = 0
     for model_id in MODELS.keys():
         for task_id in TASKS:
-            tmp, counter = get_cv_metrics_for_model_and_task(model_id, task_id, pool, 10, counter, start_at)
+            tmp, counter = get_cv_metrics_for_model_and_task(model_id, task_id, pool, 1, counter, start_at)
             promises.extend(tmp)
             
     logging.info(f"{len(promises)} promises submitted to pool")
@@ -189,13 +193,20 @@ with multiprocessing.Pool(processes=n_procs) as pool:
 # In[ ]:
 
 
-exit()
+if get_ipython().__class__.__name__ != 'ZMQInteractiveShell':
+    exit()
 
 
 # In[ ]:
 
 
-df = load("/home/maximl/Data/Experiment_data/results/riverrel/metrics_1600887779.dat")
+df = load("/home/maximl/Data/Experiment_data/results/riverrel/metrics_1600940535.dat")
+
+
+# In[ ]:
+
+
+df = load("metrics_1600957213.dat")
 
 
 # In[ ]:
@@ -321,10 +332,4 @@ for idx, model_df in grouped_df.groupby("model_id"):
 
 
 seaborn.catplot(data=long_df[long_df["metric"].isin(["ece", "ece_balanced", "peace"])], x="metric", y="value", col="model_id", kind="box")
-
-
-# In[ ]:
-
-
-
 
