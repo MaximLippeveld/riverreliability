@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[2]:
+# In[1]:
 
 
 import pandas
@@ -87,9 +87,9 @@ def load_openml_task(task_id):
 MODELS = {
     "rf": sklearn.ensemble.RandomForestClassifier(),
     "svm": sklearn.svm.SVC(probability=True),
-    "logreg": sklearn.linear_model.LogisticRegression(),
+    "logreg": sklearn.linear_model.LogisticRegression(max_iter=500),
     "nb": sklearn.naive_bayes.GaussianNB(),
-    "mlp": sklearn.neural_network.MLPClassifier()
+    "mlp": sklearn.neural_network.MLPClassifier(max_iter=500)
 }
 
 
@@ -133,6 +133,8 @@ def get_cv_metrics_for_model_and_task(model_id, task_id, pool, n_repeats):
     promises = []
     for i, (train_idx, test_idx) in enumerate(splitter.split()):
         for j in range(n_repeats):
+            numpy.random.seed(j)
+            
             row = {
                 "fold": i,
                 "repeat": j,
@@ -180,38 +182,46 @@ with multiprocessing.Pool(processes=n_procs) as pool:
 exit()
 
 
-# In[13]:
+# In[5]:
 
 
-df = load("metrics_1600886418.dat")
+df = load("/home/maximl/Data/Experiment_data/results/riverrel/metrics_1600887779.dat")
 
 
-# In[14]:
+# In[6]:
 
 
 grouped_df = df.groupby(["model_id", "task_id", "repeat"]).aggregate("mean").drop(columns=["fold"]).reset_index()
 
 
-# In[15]:
+# In[7]:
 
 
 grouped_df
 
 
-# In[22]:
+# In[13]:
 
 
 dfs = []
 for col in grouped_df.iloc[:, 3:]:
-    dfs.append(
-        pandas.DataFrame(
-            dict(value=grouped_df[col], metric=col, subject=grouped_df["model_id"] + grouped_df["task_id"].astype(str))
-        )
-    )
+    dfs.append(pandas.DataFrame(dict(        
+        value=grouped_df[col], 
+        metric=col, 
+        subject=grouped_df["model_id"] + grouped_df["task_id"].astype(str),
+        model_id=grouped_df["model_id"],
+        task_id=grouped_df["task_id"]
+    )))
 long_df = pandas.concat(dfs)
 
 
-# In[23]:
+# In[20]:
+
+
+long_df.shape
+
+
+# In[14]:
 
 
 long_df.head()
@@ -220,16 +230,28 @@ long_df.head()
 # In[24]:
 
 
-seaborn.displot(data=long_df[long_df["metric"].isin(["ece", "ece_balanced", "peace"])], x="value", col="metric", rug=True, kind="kde")
+seaborn.catplot(data=long_df[long_df["metric"].isin(["accuracy", "balanced_accuracy", "f1"])], x="model_id", y="value", col="metric", kind="box")
 
 
 # In[25]:
 
 
-seaborn.boxplot(data=long_df[long_df["metric"].isin(["ece", "ece_balanced", "peace"])], y="value", x="metric")
+seaborn.catplot(data=long_df[long_df["metric"].isin(["accuracy", "balanced_accuracy", "f1"])], x="task_id", y="value", col="metric", kind="box")
+
+
+# In[15]:
+
+
+seaborn.displot(data=long_df[long_df["metric"].isin(["ece", "ece_balanced", "peace"])], x="value", col="metric", rug=True, kind="kde")
 
 
 # In[26]:
+
+
+seaborn.boxplot(data=long_df[long_df["metric"].isin(["ece", "ece_balanced", "peace"])], y="value", x="metric")
+
+
+# In[12]:
 
 
 seaborn.lineplot(data=long_df[long_df["metric"].isin(["ece", "ece_balanced", "peace"])], y="value", x="metric", hue="subject", err_style="bars", palette="tab10")
