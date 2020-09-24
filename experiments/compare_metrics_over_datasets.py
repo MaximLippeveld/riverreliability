@@ -43,7 +43,13 @@ n_procs = parser.parse_args().n_processes
 # In[3]:
 
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(asctime)s - %(message)s')
+
+
+# In[4]:
+
+
+logging.info("test")
 
 
 # In[4]:
