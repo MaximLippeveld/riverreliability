@@ -21,6 +21,7 @@ import sklearn.utils
 import sklearn.linear_model
 import sklearn.naive_bayes
 import sklearn.neural_network
+import sklearn.tree
 
 from ridgereliability import plots, metrics
 
@@ -96,7 +97,9 @@ MODELS = {
     "svm": sklearn.svm.SVC(probability=True),
     "logreg": sklearn.linear_model.LogisticRegression(max_iter=500),
     "nb": sklearn.naive_bayes.GaussianNB(),
-    "mlp": sklearn.neural_network.MLPClassifier(max_iter=500)
+    "mlp": sklearn.neural_network.MLPClassifier(max_iter=500),
+    "adaboost": sklearn.ensemble.AdaBoostClassifier(n_estimators=500),
+    "dectree": sklearn.tree.DecisionTreeClassifier()
 }
 
 
@@ -163,7 +166,7 @@ def get_cv_metrics_for_model_and_task(model_id, task_id, pool, n_repeats, counte
     return promises, counter
 
 
-# In[13]:
+# In[ ]:
 
 
 with multiprocessing.Pool(processes=n_procs) as pool:
