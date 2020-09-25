@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[49]:
+# In[1]:
 
 
 import pandas
@@ -32,7 +32,7 @@ import time
 from joblib import load, dump
 
 
-# In[50]:
+# In[2]:
 
 
 def is_notebook():
@@ -43,7 +43,7 @@ def is_notebook():
         return False
 
 
-# In[51]:
+# In[3]:
 
 
 if is_notebook():
@@ -59,20 +59,20 @@ else:
     random_tasks = args.random_tasks
 
 
-# In[52]:
+# In[4]:
 
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(asctime)s - %(message)s')
 logging.captureWarnings(True)
 
 
-# In[53]:
+# In[5]:
 
 
 numpy.random.seed(42)
 
 
-# In[54]:
+# In[6]:
 
 
 def find_random_task(offset):
@@ -84,7 +84,7 @@ def find_random_task(offset):
                 return df.sample(n=1).iloc[0]["tid"]
 
 
-# In[55]:
+# In[7]:
 
 
 if random_tasks > 0:
@@ -93,7 +93,7 @@ else:
     TASKS = [9983, 9952, 3899, 219, 3954, 14964, 32, 6, 3510, 40, 9950, 53, 3512, 12, 3962, 39, 3577, 145682, 3794, 146824]
 
 
-# In[56]:
+# In[8]:
 
 
 def load_openml_task(task_id=None, offset=0):
@@ -125,7 +125,7 @@ def load_openml_task(task_id=None, offset=0):
             if n_folds > 10:
                 continue
 
-            folds = numpy.empty((len(X)), dtype=int)
+            folds = numpy.full((len(X)), dtype=int, fill_value=-1)
             for fold_idx in range(n_folds):
                 _, test_indices = task.get_train_test_split_indices(
                     repeat=0,
@@ -143,7 +143,7 @@ def load_openml_task(task_id=None, offset=0):
                 raise e
 
 
-# In[59]:
+# In[11]:
 
 
 MODELS = {
@@ -157,7 +157,7 @@ MODELS = {
 }
 
 
-# In[60]:
+# In[12]:
 
 
 def get_fold_metrics_for_model(row, Xt, yt, Xv, yv):
@@ -186,7 +186,7 @@ def get_fold_metrics_for_model(row, Xt, yt, Xv, yv):
     return row
 
 
-# In[63]:
+# In[13]:
 
 
 def get_cv_metrics_for_model_and_task(model_id, task_id, pool, n_repeats, counter, start_at):
@@ -221,7 +221,7 @@ def get_cv_metrics_for_model_and_task(model_id, task_id, pool, n_repeats, counte
     return promises, counter
 
 
-# In[64]:
+# In[14]:
 
 
 with multiprocessing.Pool(processes=n_procs) as pool:
