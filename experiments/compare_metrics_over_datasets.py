@@ -53,7 +53,7 @@ else:
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--n-processes", type=int, required=True)
-    parser.add_argument("--random-tasks", type=bool, action="store_true")
+    parser.add_argument("--random-tasks", action="store_true")
     args = parser.parse_args()
     n_procs = args.n_processes
     random_tasks = args.random_tasks
