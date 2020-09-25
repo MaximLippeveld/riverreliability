@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[25]:
+# In[6]:
 
 
 import pandas
@@ -32,7 +32,7 @@ import time
 from joblib import load, dump
 
 
-# In[26]:
+# In[7]:
 
 
 def is_notebook():
@@ -43,11 +43,11 @@ def is_notebook():
         return False
 
 
-# In[27]:
+# In[8]:
 
 
 if is_notebook():
-    n_procs = multiprocessing.cpu_count()
+    n_procs = multiprocessing.cpu_count()//2
     random_tasks = True
 else:
     import argparse
@@ -59,39 +59,39 @@ else:
     random_tasks = args.random_tasks
 
 
-# In[28]:
+# In[9]:
 
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(asctime)s - %(message)s')
 
 
-# In[29]:
+# In[10]:
 
 
 numpy.random.seed(42)
 
 
-# In[7]:
+# In[11]:
 
 
 def find_random_task(offset):
     while True:
-        df = openml.tasks.list_tasks(task_type_id=1, offset=offset, output_format="dataframe", size=1000, status="active", number_missing_values=0).sample(n=1)
+        df = openml.tasks.list_tasks(task_type_id=1, offset=offset, output_format="dataframe", size=1000, status="active", number_missing_values=0)
         df = df[(df["NumberOfInstances"] > 100) & (df["NumberOfInstances"] < 1000)]
-        if len(df) == 1:
-            return df.iloc[0]["tid"]
+        if len(df) > 0:
+            return df.sample(n=1).iloc[0]["tid"]
 
 
-# In[8]:
+# In[12]:
 
 
 if random_tasks:
-    TASKS = 150
+    TASKS = 2
 else:
     TASKS = [9983, 9952, 3899, 219, 3954, 14964, 32, 6, 3510, 40, 9950, 53, 3512, 12, 3962, 39, 3577, 145682, 3794, 146824]
 
 
-# In[9]:
+# In[13]:
 
 
 def load_openml_task(task_id=None, offset=0):
@@ -134,7 +134,7 @@ def load_openml_task(task_id=None, offset=0):
                 raise e
 
 
-# In[12]:
+# In[16]:
 
 
 MODELS = {
@@ -148,7 +148,7 @@ MODELS = {
 }
 
 
-# In[13]:
+# In[17]:
 
 
 def get_fold_metrics_for_model(row, Xt, yt, Xv, yv):
@@ -177,7 +177,7 @@ def get_fold_metrics_for_model(row, Xt, yt, Xv, yv):
     return row
 
 
-# In[14]:
+# In[18]:
 
 
 def get_cv_metrics_for_model_and_task(model_id, task_id, pool, n_repeats, counter, start_at):
@@ -211,7 +211,7 @@ def get_cv_metrics_for_model_and_task(model_id, task_id, pool, n_repeats, counte
     return promises, counter
 
 
-# In[15]:
+# In[19]:
 
 
 with multiprocessing.Pool(processes=n_procs) as pool:
@@ -234,7 +234,7 @@ with multiprocessing.Pool(processes=n_procs) as pool:
             tmp, counter = get_cv_metrics_for_model_and_task(model_id, task_id, pool, 1, counter, start_at)
             promises.extend(tmp)
 
-    logging.info(f"{len(promises)} promises submitted to pool")
+    print(f"{len(promises)} promises submitted to pool")
 
     data = []
     for promise in promises:
