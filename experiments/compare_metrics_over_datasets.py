@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[6]:
+# In[2]:
 
 
 import pandas
@@ -32,7 +32,7 @@ import time
 from joblib import load, dump
 
 
-# In[7]:
+# In[3]:
 
 
 def is_notebook():
@@ -43,7 +43,7 @@ def is_notebook():
         return False
 
 
-# In[8]:
+# In[4]:
 
 
 if is_notebook():
@@ -53,45 +53,45 @@ else:
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--n-processes", type=int, required=True)
-    parser.add_argument("--random-tasks", action="store_true")
+    parser.add_argument("--random-tasks", type=int, default=0)
     args = parser.parse_args()
     n_procs = args.n_processes
     random_tasks = args.random_tasks
 
 
-# In[9]:
+# In[5]:
 
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(asctime)s - %(message)s')
 
 
-# In[10]:
+# In[6]:
 
 
 numpy.random.seed(42)
 
 
-# In[11]:
+# In[7]:
 
 
 def find_random_task(offset):
     while True:
-        df = openml.tasks.list_tasks(task_type_id=1, offset=offset, output_format="dataframe", size=1000, status="active", number_missing_values=0)
+        df = openml.tasks.list_tasks(task_type_id=1, offset=offset, output_format="dataframe", size=10000, status="active", number_missing_values=0)
         df = df[(df["NumberOfInstances"] > 100) & (df["NumberOfInstances"] < 1000)]
         if len(df) > 0:
             return df.sample(n=1).iloc[0]["tid"]
 
 
-# In[12]:
+# In[8]:
 
 
-if random_tasks:
-    TASKS = 2
+if random_tasks > 0:
+    TASKS = random_tasks
 else:
     TASKS = [9983, 9952, 3899, 219, 3954, 14964, 32, 6, 3510, 40, 9950, 53, 3512, 12, 3962, 39, 3577, 145682, 3794, 146824]
 
 
-# In[13]:
+# In[9]:
 
 
 def load_openml_task(task_id=None, offset=0):
@@ -134,21 +134,21 @@ def load_openml_task(task_id=None, offset=0):
                 raise e
 
 
-# In[16]:
+# In[12]:
 
 
 MODELS = {
     "rf": sklearn.ensemble.RandomForestClassifier(),
     "svm": sklearn.svm.SVC(probability=True),
-    "logreg": sklearn.linear_model.LogisticRegression(max_iter=500),
+    "logreg": sklearn.linear_model.LogisticRegression(max_iter=1000),
     "nb": sklearn.naive_bayes.GaussianNB(),
-    "mlp": sklearn.neural_network.MLPClassifier(max_iter=500),
+    "mlp": sklearn.neural_network.MLPClassifier(max_iter=1000),
     "adaboost": sklearn.ensemble.AdaBoostClassifier(n_estimators=500),
     "dectree": sklearn.tree.DecisionTreeClassifier()
 }
 
 
-# In[17]:
+# In[13]:
 
 
 def get_fold_metrics_for_model(row, Xt, yt, Xv, yv):
@@ -177,7 +177,7 @@ def get_fold_metrics_for_model(row, Xt, yt, Xv, yv):
     return row
 
 
-# In[18]:
+# In[14]:
 
 
 def get_cv_metrics_for_model_and_task(model_id, task_id, pool, n_repeats, counter, start_at):
@@ -211,14 +211,14 @@ def get_cv_metrics_for_model_and_task(model_id, task_id, pool, n_repeats, counte
     return promises, counter
 
 
-# In[19]:
+# In[15]:
 
 
 with multiprocessing.Pool(processes=n_procs) as pool:
 
     start_at = 0
 
-    output_file = f"metrics_{int(time.time())}.dat"
+    output_file = f"metrics_{time.time()}.dat"
     logging.info(f"Output to {output_file}")
 
     promises = []
@@ -251,25 +251,25 @@ if not is_notebook():
     exit()
 
 
-# In[42]:
+# In[ ]:
 
 
 df = load("/home/maximl/Data/Experiment_data/results/riverrel/metrics_1600983960.dat")
 
 
-# In[43]:
+# In[ ]:
 
 
 grouped_df = df.groupby(["model_id", "task_id", "repeat"]).aggregate("mean").drop(columns=["fold"]).reset_index()
 
 
-# In[44]:
+# In[ ]:
 
 
 grouped_df
 
 
-# In[45]:
+# In[ ]:
 
 
 def get_longform(df, cols=None, subject_cols=None):
@@ -294,82 +294,82 @@ def get_longform(df, cols=None, subject_cols=None):
     return pandas.concat(dfs)
 
 
-# In[46]:
+# In[ ]:
 
 
 long_df = get_longform(grouped_df, grouped_df.columns[3:], ["model_id", "task_id"])
 
 
-# In[47]:
+# In[ ]:
 
 
 long_df.shape
 
 
-# In[48]:
+# In[ ]:
 
 
 long_df.head()
 
 
-# In[49]:
+# In[ ]:
 
 
 seaborn.catplot(data=long_df[long_df["metric"].isin(["accuracy", "balanced_accuracy", "f1"])], x="model_id", y="value", col="metric", kind="box")
 
 
-# In[50]:
+# In[ ]:
 
 
 seaborn.catplot(data=long_df[long_df["metric"].isin(["accuracy", "balanced_accuracy", "f1"])], x="task_id", y="value", col="metric", kind="box")
 
 
-# In[51]:
+# In[ ]:
 
 
 seaborn.displot(data=long_df[long_df["metric"].isin(["ece", "ece_balanced", "peace"])], x="value", col="metric", rug=True, kind="kde")
 
 
-# In[58]:
+# In[ ]:
 
 
 seaborn.boxenplot(data=long_df[long_df["metric"].isin(["ece", "ece_balanced", "peace"])], y="value", x="metric")
 
 
-# In[64]:
+# In[ ]:
 
 
 long_df["metric_ord"] = long_df["metric"].map(lambda a: numpy.unique(long_df["metric"]).tolist().index(a))
 
 
-# In[67]:
+# In[ ]:
 
 
 seaborn.lmplot(data=long_df[long_df["metric"].isin(["ece", "ece_balanced", "peace"])], y="value", x="metric_ord")
 
 
-# In[54]:
+# In[ ]:
 
 
 import scipy.stats
 import scikit_posthocs as sp
 
 
-# In[55]:
+# In[ ]:
 
 
 data = grouped_df.loc[grouped_df["repeat"] == 0, ["ece", "ece_balanced", "peace"]].values
 scipy.stats.friedmanchisquare(data[0], data[1], data[2])
 
 
-# In[56]:
+# In[ ]:
 
 
 long_data = get_longform(grouped_df.loc[grouped_df["repeat"] == 0, ["ece", "ece_balanced", "peace"]])
 sp.posthoc_conover(long_data, val_col="value", group_col="metric", p_adjust="holm")
 
 
-# In[57]:
+# In[ ]:
 
 
 for idx, model_df in grouped_df.groupby("model_id"):
