@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[2]:
+# In[16]:
 
 
 import pandas
@@ -32,64 +32,109 @@ import time
 from joblib import load, dump
 
 
-# In[3]:
+# In[21]:
 
 
-if get_ipython().__class__.__name__ != 'ZMQInteractiveShell':
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--n-processes", type=int, required=True)
-    n_procs = parser.parse_args().n_processes
-else:
-    n_procs = multiprocessing.cpu_count()
+def is_notebook():
+    try:
+        from IPython import get_ipython
+        return get_ipython().__class__.__name__ == 'ZMQInteractiveShell'
+    except ModuleNotFoundError:
+        return False
 
 
 # In[4]:
 
 
-logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(asctime)s - %(message)s')
+if is_notebook():
+    n_procs = multiprocessing.cpu_count()
+    random_tasks = True
+else:
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--n-processes", type=int, required=True)
+    parser.add_argument("--random-tasks", type=bool, action="store_true")
+    args = parser.parse_args()
+    n_procs = args.n_processes
+    random_tasks = args.random_tasks
 
 
 # In[5]:
 
 
-numpy.random.seed(42)
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(asctime)s - %(message)s')
 
 
 # In[6]:
 
 
-TASKS = [9983, 9952, 3899, 219, 3954, 14964, 32, 6, 3510, 40, 9950, 53, 3512, 12, 3962, 39, 3577, 145682, 3794, 146824]
+numpy.random.seed(42)
 
 
 # In[7]:
 
 
-def load_openml_task(task_id):
-    task = openml.tasks.get_task(task_id)
-    X, y = task.get_X_and_y("dataframe")
+def find_random_task(offset):
+    while True:
+        df = openml.tasks.list_tasks(task_type_id=1, offset=offset, output_format="dataframe", size=1000, status="active", number_missing_values=0).sample(n=1)
+        df = df[(df["NumberOfInstances"] > 100) & (df["NumberOfInstances"] < 1000)]
+        if len(df) == 1:
+            return df.iloc[0]["tid"]
+
+
+# In[8]:
+
+
+if random_tasks:
+    TASKS = 150
+else:
+    TASKS = [9983, 9952, 3899, 219, 3954, 14964, 32, 6, 3510, 40, 9950, 53, 3512, 12, 3962, 39, 3577, 145682, 3794, 146824]
+
+
+# In[9]:
+
+
+def load_openml_task(task_id=None, offset=0):
     
-    X_enc = sklearn.preprocessing.OrdinalEncoder().fit_transform(X.values)
-    X = pandas.DataFrame(X_enc, columns=X.columns, index=X.index)
-    
-    n_repeats, n_folds, n_samples = task.get_split_dimensions()
+    while True:
+        if task_id is None:
+            curr_id = find_random_task(offset)
+        else:
+            curr_id = task_id
 
-    folds = numpy.empty((len(X)), dtype=int)
-    for fold_idx in range(n_folds):
-        _, test_indices = task.get_train_test_split_indices(
-            repeat=0,
-            fold=fold_idx,
-            sample=0,
-        )
-        
-        folds[test_indices] = fold_idx
-        
-    splitter = sklearn.model_selection.PredefinedSplit(folds)
-                
-    return X, y, splitter        
+        try: 
+            task = openml.tasks.get_task(curr_id)
+            X, y = task.get_X_and_y("array")
+            X, y = sklearn.utils.indexable(X, y)
+
+            if hasattr(X, "toarray"):
+                X = X.toarray()
+            if hasattr(y, "toarray"):
+                y = y.toarray()
+
+            X = sklearn.preprocessing.OrdinalEncoder().fit_transform(X)
+
+            n_repeats, n_folds, n_samples = task.get_split_dimensions()
+
+            folds = numpy.empty((len(X)), dtype=int)
+            for fold_idx in range(n_folds):
+                _, test_indices = task.get_train_test_split_indices(
+                    repeat=0,
+                    fold=fold_idx,
+                    sample=0,
+                )
+
+                folds[test_indices] = fold_idx
+
+            splitter = sklearn.model_selection.PredefinedSplit(folds)
+
+            return X, y, splitter, task_id
+        except openml.exceptions.PyOpenMLError as e:
+            if task_id is not None:
+                raise e
 
 
-# In[10]:
+# In[12]:
 
 
 MODELS = {
@@ -103,7 +148,7 @@ MODELS = {
 }
 
 
-# In[11]:
+# In[13]:
 
 
 def get_fold_metrics_for_model(row, Xt, yt, Xv, yv):
@@ -132,12 +177,12 @@ def get_fold_metrics_for_model(row, Xt, yt, Xv, yv):
     return row
 
 
-# In[12]:
+# In[14]:
 
 
 def get_cv_metrics_for_model_and_task(model_id, task_id, pool, n_repeats, counter, start_at):
     
-    X, y, splitter = load_openml_task(task_id) # repeated runs will use cached data
+    X, y, splitter, task_id = load_openml_task(task_id, offset=counter) # repeated runs will use cached data
     
     promises = []
     for i, (train_idx, test_idx) in enumerate(splitter.split()):
@@ -154,8 +199,8 @@ def get_cv_metrics_for_model_and_task(model_id, task_id, pool, n_repeats, counte
             }
 
             # split data
-            Xt, yt = X.iloc[train_idx], y.iloc[train_idx]
-            Xv, yv = X.iloc[test_idx], y.iloc[test_idx]
+            Xt, yt = X[train_idx], y[train_idx]
+            Xv, yv = X[test_idx], y[test_idx]
 
             promise = pool.apply_async(
                 get_fold_metrics_for_model,
@@ -166,25 +211,31 @@ def get_cv_metrics_for_model_and_task(model_id, task_id, pool, n_repeats, counte
     return promises, counter
 
 
-# In[ ]:
+# In[15]:
 
 
 with multiprocessing.Pool(processes=n_procs) as pool:
-    
+
     start_at = 0
-    
+
     output_file = f"metrics_{int(time.time())}.dat"
     logging.info(f"Output to {output_file}")
-    
+
     promises = []
     counter = 0
+    
+    if type(TASKS) is int:
+        iter_tasks = [None]*TASKS
+    else:
+        iter_tasks = TASKS
+    
     for model_id in MODELS.keys():
-        for task_id in TASKS:
+        for task_id in iter_tasks:
             tmp, counter = get_cv_metrics_for_model_and_task(model_id, task_id, pool, 1, counter, start_at)
             promises.extend(tmp)
-            
+
     logging.info(f"{len(promises)} promises submitted to pool")
-            
+
     data = []
     for promise in promises:
         data.append(promise.get())
@@ -196,7 +247,7 @@ with multiprocessing.Pool(processes=n_procs) as pool:
 # In[ ]:
 
 
-if get_ipython().__class__.__name__ != 'ZMQInteractiveShell':
+if not is_notebook():
     exit()
 
 
