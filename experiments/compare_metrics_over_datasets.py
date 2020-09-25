@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[2]:
+# In[49]:
 
 
 import pandas
@@ -32,7 +32,7 @@ import time
 from joblib import load, dump
 
 
-# In[3]:
+# In[50]:
 
 
 def is_notebook():
@@ -43,7 +43,7 @@ def is_notebook():
         return False
 
 
-# In[4]:
+# In[51]:
 
 
 if is_notebook():
@@ -59,19 +59,20 @@ else:
     random_tasks = args.random_tasks
 
 
-# In[5]:
+# In[52]:
 
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(asctime)s - %(message)s')
+logging.captureWarnings(True)
 
 
-# In[6]:
+# In[53]:
 
 
 numpy.random.seed(42)
 
 
-# In[7]:
+# In[54]:
 
 
 def find_random_task(offset):
@@ -83,7 +84,7 @@ def find_random_task(offset):
                 return df.sample(n=1).iloc[0]["tid"]
 
 
-# In[8]:
+# In[55]:
 
 
 if random_tasks > 0:
@@ -92,7 +93,7 @@ else:
     TASKS = [9983, 9952, 3899, 219, 3954, 14964, 32, 6, 3510, 40, 9950, 53, 3512, 12, 3962, 39, 3577, 145682, 3794, 146824]
 
 
-# In[9]:
+# In[56]:
 
 
 def load_openml_task(task_id=None, offset=0):
@@ -120,6 +121,9 @@ def load_openml_task(task_id=None, offset=0):
             X = sklearn.preprocessing.OrdinalEncoder().fit_transform(X)
 
             n_repeats, n_folds, n_samples = task.get_split_dimensions()
+            
+            if n_folds > 10:
+                continue
 
             folds = numpy.empty((len(X)), dtype=int)
             for fold_idx in range(n_folds):
@@ -139,7 +143,7 @@ def load_openml_task(task_id=None, offset=0):
                 raise e
 
 
-# In[12]:
+# In[59]:
 
 
 MODELS = {
@@ -153,7 +157,7 @@ MODELS = {
 }
 
 
-# In[13]:
+# In[60]:
 
 
 def get_fold_metrics_for_model(row, Xt, yt, Xv, yv):
@@ -182,7 +186,7 @@ def get_fold_metrics_for_model(row, Xt, yt, Xv, yv):
     return row
 
 
-# In[14]:
+# In[63]:
 
 
 def get_cv_metrics_for_model_and_task(model_id, task_id, pool, n_repeats, counter, start_at):
@@ -212,11 +216,12 @@ def get_cv_metrics_for_model_and_task(model_id, task_id, pool, n_repeats, counte
                 (row, Xt, yt, Xv, yv)
             )
             promises.append(promise)
-        
+    
+    logging.info(f"Promises for single cv: {len(promises)}")
     return promises, counter
 
 
-# In[15]:
+# In[64]:
 
 
 with multiprocessing.Pool(processes=n_procs) as pool:
