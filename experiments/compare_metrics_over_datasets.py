@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[16]:
+# In[25]:
 
 
 import pandas
@@ -32,7 +32,7 @@ import time
 from joblib import load, dump
 
 
-# In[21]:
+# In[26]:
 
 
 def is_notebook():
@@ -43,7 +43,7 @@ def is_notebook():
         return False
 
 
-# In[4]:
+# In[27]:
 
 
 if is_notebook():
@@ -59,13 +59,13 @@ else:
     random_tasks = args.random_tasks
 
 
-# In[5]:
+# In[28]:
 
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(asctime)s - %(message)s')
 
 
-# In[6]:
+# In[29]:
 
 
 numpy.random.seed(42)
@@ -129,7 +129,7 @@ def load_openml_task(task_id=None, offset=0):
             splitter = sklearn.model_selection.PredefinedSplit(folds)
 
             return X, y, splitter, task_id
-        except openml.exceptions.PyOpenMLError as e:
+        except:
             if task_id is not None:
                 raise e
 
@@ -251,31 +251,25 @@ if not is_notebook():
     exit()
 
 
-# In[ ]:
+# In[42]:
 
 
-df = load("/home/maximl/Data/Experiment_data/results/riverrel/metrics_1600940535.dat")
+df = load("/home/maximl/Data/Experiment_data/results/riverrel/metrics_1600983960.dat")
 
 
-# In[ ]:
-
-
-df = load("metrics_1600957213.dat")
-
-
-# In[ ]:
+# In[43]:
 
 
 grouped_df = df.groupby(["model_id", "task_id", "repeat"]).aggregate("mean").drop(columns=["fold"]).reset_index()
 
 
-# In[ ]:
+# In[44]:
 
 
 grouped_df
 
 
-# In[ ]:
+# In[45]:
 
 
 def get_longform(df, cols=None, subject_cols=None):
@@ -300,76 +294,82 @@ def get_longform(df, cols=None, subject_cols=None):
     return pandas.concat(dfs)
 
 
-# In[ ]:
+# In[46]:
 
 
 long_df = get_longform(grouped_df, grouped_df.columns[3:], ["model_id", "task_id"])
 
 
-# In[ ]:
+# In[47]:
 
 
 long_df.shape
 
 
-# In[ ]:
+# In[48]:
 
 
 long_df.head()
 
 
-# In[ ]:
+# In[49]:
 
 
 seaborn.catplot(data=long_df[long_df["metric"].isin(["accuracy", "balanced_accuracy", "f1"])], x="model_id", y="value", col="metric", kind="box")
 
 
-# In[ ]:
+# In[50]:
 
 
 seaborn.catplot(data=long_df[long_df["metric"].isin(["accuracy", "balanced_accuracy", "f1"])], x="task_id", y="value", col="metric", kind="box")
 
 
-# In[ ]:
+# In[51]:
 
 
 seaborn.displot(data=long_df[long_df["metric"].isin(["ece", "ece_balanced", "peace"])], x="value", col="metric", rug=True, kind="kde")
 
 
-# In[ ]:
+# In[58]:
 
 
-seaborn.boxplot(data=long_df[long_df["metric"].isin(["ece", "ece_balanced", "peace"])], y="value", x="metric")
+seaborn.boxenplot(data=long_df[long_df["metric"].isin(["ece", "ece_balanced", "peace"])], y="value", x="metric")
 
 
-# In[ ]:
+# In[64]:
 
 
-seaborn.lineplot(data=long_df[long_df["metric"].isin(["ece", "ece_balanced", "peace"])], y="value", x="metric", hue="subject", err_style="bars", palette="tab10")
+long_df["metric_ord"] = long_df["metric"].map(lambda a: numpy.unique(long_df["metric"]).tolist().index(a))
 
 
-# In[ ]:
+# In[67]:
+
+
+seaborn.lmplot(data=long_df[long_df["metric"].isin(["ece", "ece_balanced", "peace"])], y="value", x="metric_ord")
+
+
+# In[54]:
 
 
 import scipy.stats
 import scikit_posthocs as sp
 
 
-# In[ ]:
+# In[55]:
 
 
 data = grouped_df.loc[grouped_df["repeat"] == 0, ["ece", "ece_balanced", "peace"]].values
 scipy.stats.friedmanchisquare(data[0], data[1], data[2])
 
 
-# In[ ]:
+# In[56]:
 
 
 long_data = get_longform(grouped_df.loc[grouped_df["repeat"] == 0, ["ece", "ece_balanced", "peace"]])
 sp.posthoc_conover(long_data, val_col="value", group_col="metric", p_adjust="holm")
 
 
-# In[ ]:
+# In[57]:
 
 
 for idx, model_df in grouped_df.groupby("model_id"):
