@@ -238,8 +238,9 @@ with multiprocessing.Pool(processes=n_procs) as pool:
         for task_id in iter_tasks:
             tmp, counter = get_cv_metrics_for_model_and_task(model_id, task_id, pool, 1, counter, start_at)
             promises.extend(tmp)
+            logging.info(f"{len(promises)} promises submitted to pool ({model_id, task_id})")
 
-    print(f"{len(promises)} promises submitted to pool")
+    logging.info(f"{len(promises)} promises submitted to pool")
 
     data = []
     for promise in promises:
