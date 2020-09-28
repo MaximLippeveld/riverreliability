@@ -193,35 +193,39 @@ def get_fold_metrics_for_model(row, Xt, yt, Xv, yv):
 
 
 def get_cv_metrics_for_model_and_task(model_id, task_id, pool, n_repeats, counter, start_at, selected_tasks):
-    
-    X, y, splitter, task_id = load_openml_task(task_id, offset=counter, selected_tasks=selected_tasks) # repeated runs will use cached data
-    
-    promises = []
-    for i, (train_idx, test_idx) in enumerate(splitter.split()):
-        for j in range(n_repeats):
-            counter += 1
-            if counter < start_at:
-                continue
+    while True:
+        X, y, splitter, task_id = load_openml_task(task_id, offset=counter, selected_tasks=selected_tasks) # repeated runs will use cached data
+        try:
+
+            promises = []
+            for i, (train_idx, test_idx) in enumerate(splitter.split()):
+                for j in range(n_repeats):
+                    counter += 1
+                    if counter < start_at:
+                        continue
+
+                    row = {
+                        "fold": i,
+                        "repeat": j,
+                        "model_id": model_id,
+                        "task_id": task_id,
+                    }
+
+                    # split data
+                    Xt, yt = X[train_idx], y[train_idx]
+                    Xv, yv = X[test_idx], y[test_idx]
+
+                    promise = pool.apply_async(
+                        get_fold_metrics_for_model,
+                        (row, Xt, yt, Xv, yv)
+                    )
+                    promises.append(promise)
+
+            logging.info(f"Promises for single cv: {len(promises)}")
+            return promises, counter
+        except:
+            logging.exception(f"Error in CV for task {task_id}. Trying new task.")
             
-            row = {
-                "fold": i,
-                "repeat": j,
-                "model_id": model_id,
-                "task_id": task_id,
-            }
-
-            # split data
-            Xt, yt = X[train_idx], y[train_idx]
-            Xv, yv = X[test_idx], y[test_idx]
-
-            promise = pool.apply_async(
-                get_fold_metrics_for_model,
-                (row, Xt, yt, Xv, yv)
-            )
-            promises.append(promise)
-    
-    logging.info(f"Promises for single cv: {len(promises)}")
-    return promises, counter
 
 
 # In[14]:
