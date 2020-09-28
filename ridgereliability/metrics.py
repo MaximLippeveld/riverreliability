@@ -132,6 +132,12 @@ def class_wise_error(y_probs, y_preds, y_true, base_error, *base_error_args, **b
 
     """
 
+    if hasattr(y_preds, "to_numpy"):
+        y_preds = y_preds.to_numpy()
+    if hasattr(y_preds, "to_numpy"):
+        y_true = y_true.to_numpy()
+
+    sklearn.utils.check_consistent_length(y_preds, y_true)
     classes = sklearn.utils.multiclass.unique_labels(y_preds, y_true)
 
     result = 0.
