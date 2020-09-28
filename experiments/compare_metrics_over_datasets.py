@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
+# In[2]:
 
 
 import pandas
@@ -32,7 +32,7 @@ import time
 from joblib import load, dump
 
 
-# In[ ]:
+# In[3]:
 
 
 def is_notebook():
@@ -43,7 +43,7 @@ def is_notebook():
         return False
 
 
-# In[3]:
+# In[4]:
 
 
 if is_notebook():
@@ -59,20 +59,20 @@ else:
     random_tasks = args.random_tasks
 
 
-# In[4]:
+# In[5]:
 
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(asctime)s - %(message)s')
 logging.captureWarnings(True)
 
 
-# In[5]:
+# In[6]:
 
 
 numpy.random.seed(42)
 
 
-# In[6]:
+# In[7]:
 
 
 def find_random_task(offset, selected_tasks):
@@ -87,7 +87,7 @@ def find_random_task(offset, selected_tasks):
                     return task
 
 
-# In[7]:
+# In[8]:
 
 
 if random_tasks > 0:
@@ -96,7 +96,7 @@ else:
     TASKS = [9983, 9952, 3899, 219, 3954, 14964, 32, 6, 3510, 40, 9950, 53, 3512, 12, 3962, 39, 3577, 145682, 3794, 146824]
 
 
-# In[8]:
+# In[9]:
 
 
 def load_openml_task(task_id=None, offset=0, selected_tasks=[]):
@@ -146,7 +146,7 @@ def load_openml_task(task_id=None, offset=0, selected_tasks=[]):
                 raise e
 
 
-# In[11]:
+# In[12]:
 
 
 MODELS = {
@@ -160,7 +160,7 @@ MODELS = {
 }
 
 
-# In[12]:
+# In[13]:
 
 
 def get_fold_metrics_for_model(row, Xt, yt, Xv, yv):
@@ -189,46 +189,41 @@ def get_fold_metrics_for_model(row, Xt, yt, Xv, yv):
     return row
 
 
-# In[13]:
+# In[14]:
 
 
 def get_cv_metrics_for_model_and_task(model_id, task_id, pool, n_repeats, counter, start_at, selected_tasks):
-    while True:
-        X, y, splitter, task_id = load_openml_task(task_id, offset=counter, selected_tasks=selected_tasks) # repeated runs will use cached data
-        try:
+    X, y, splitter, task_id = load_openml_task(task_id, offset=counter, selected_tasks=selected_tasks) # repeated runs will use cached data
 
-            promises = []
-            for i, (train_idx, test_idx) in enumerate(splitter.split()):
-                for j in range(n_repeats):
-                    counter += 1
-                    if counter < start_at:
-                        continue
+    promises = []
+    for i, (train_idx, test_idx) in enumerate(splitter.split()):
+        for j in range(n_repeats):
+            counter += 1
+            if counter < start_at:
+                continue
 
-                    row = {
-                        "fold": i,
-                        "repeat": j,
-                        "model_id": model_id,
-                        "task_id": task_id,
-                    }
+            row = {
+                "fold": i,
+                "repeat": j,
+                "model_id": model_id,
+                "task_id": task_id,
+            }
 
-                    # split data
-                    Xt, yt = X[train_idx], y[train_idx]
-                    Xv, yv = X[test_idx], y[test_idx]
+            # split data
+            Xt, yt = X[train_idx], y[train_idx]
+            Xv, yv = X[test_idx], y[test_idx]
 
-                    promise = pool.apply_async(
-                        get_fold_metrics_for_model,
-                        (row, Xt, yt, Xv, yv)
-                    )
-                    promises.append(promise)
+            promise = pool.apply_async(
+                get_fold_metrics_for_model,
+                (row, Xt, yt, Xv, yv)
+            )
+            promises.append(promise)
 
-            logging.info(f"Promises for single cv: {len(promises)}")
-            return promises, counter
-        except:
-            logging.exception(f"Error in CV for task {task_id}. Trying new task.")
-            
+    logging.info(f"Promises for single cv: {len(promises)}")
+    return promises, counter
 
 
-# In[14]:
+# In[15]:
 
 
 with multiprocessing.Pool(processes=n_procs) as pool:
@@ -259,10 +254,13 @@ with multiprocessing.Pool(processes=n_procs) as pool:
 
     data = []
     for promise in promises:
-        data.append(promise.get())
-        logging.info(f"Finished promises: {len(data)}/{len(promises)} ({len(data)/len(promises)*100:.2f}%)")
-        df = pandas.DataFrame(data)
-        dump(df, output_file)
+        try:
+            data.append(promise.get())
+            logging.info(f"Finished promises: {len(data)}/{len(promises)} ({len(data)/len(promises)*100:.2f}%)")
+            df = pandas.DataFrame(data)
+            dump(df, output_file)
+        except Exception:
+            logging.exception("Exception when collecting results")
 
 
 # In[15]:
