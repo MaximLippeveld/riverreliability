@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[2]:
 
 
 import pandas
@@ -32,7 +32,7 @@ import time
 from joblib import load, dump
 
 
-# In[2]:
+# In[3]:
 
 
 def is_notebook():
@@ -43,7 +43,7 @@ def is_notebook():
         return False
 
 
-# In[3]:
+# In[4]:
 
 
 if is_notebook():
@@ -59,14 +59,14 @@ else:
     random_tasks = args.random_tasks
 
 
-# In[4]:
+# In[5]:
 
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(asctime)s - %(message)s')
 logging.captureWarnings(True)
 
 
-# In[5]:
+# In[6]:
 
 
 numpy.random.seed(42)
@@ -137,7 +137,7 @@ def load_openml_task(task_id=None, offset=0):
 
             splitter = sklearn.model_selection.PredefinedSplit(folds)
 
-            return X, y, splitter, task_id
+            return X, y, splitter, curr_id
         except:
             if task_id is not None:
                 raise e
@@ -262,19 +262,25 @@ if not is_notebook():
     exit()
 
 
-# In[17]:
+# In[7]:
 
 
-df = load("/home/maximl/Data/Experiment_data/results/riverrel/metrics_1600983960.dat")
+df = load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random/metrics_1601149607.dat")
 
 
-# In[18]:
+# In[11]:
+
+
+df
+
+
+# In[8]:
 
 
 grouped_df = df.groupby(["model_id", "task_id", "repeat"]).aggregate("mean").drop(columns=["fold"]).reset_index()
 
 
-# In[19]:
+# In[9]:
 
 
 grouped_df
