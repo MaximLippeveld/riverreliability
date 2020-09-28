@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[2]:
+# In[ ]:
 
 
 import pandas
@@ -32,7 +32,7 @@ import time
 from joblib import load, dump
 
 
-# In[3]:
+# In[ ]:
 
 
 def is_notebook():
@@ -43,12 +43,12 @@ def is_notebook():
         return False
 
 
-# In[4]:
+# In[3]:
 
 
 if is_notebook():
     n_procs = multiprocessing.cpu_count()//2
-    random_tasks = 2
+    random_tasks = 1
 else:
     import argparse
     parser = argparse.ArgumentParser()
@@ -59,14 +59,14 @@ else:
     random_tasks = args.random_tasks
 
 
-# In[5]:
+# In[4]:
 
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(asctime)s - %(message)s')
 logging.captureWarnings(True)
 
 
-# In[6]:
+# In[5]:
 
 
 numpy.random.seed(42)
@@ -75,13 +75,16 @@ numpy.random.seed(42)
 # In[6]:
 
 
-def find_random_task(offset):
+def find_random_task(offset, selected_tasks):
     while True:
         df = openml.tasks.list_tasks(task_type_id=1, offset=offset, output_format="dataframe", size=10000, status="active", number_missing_values=0)
         if "NumberOfInstances" in df:
             df = df[(df["NumberOfInstances"] > 100) & (df["NumberOfInstances"] < 1000)]
             if len(df) > 0:
-                return df.sample(n=1).iloc[0]["tid"]
+                task = df.sample(n=1).iloc[0]["tid"]
+                if task not in selected_tasks:
+                    selected_tasks.append(task)
+                    return task
 
 
 # In[7]:
@@ -96,11 +99,11 @@ else:
 # In[8]:
 
 
-def load_openml_task(task_id=None, offset=0):
+def load_openml_task(task_id=None, offset=0, selected_tasks=[]):
     
     while True:
         if task_id is None:
-            curr_id = find_random_task(offset)
+            curr_id = find_random_task(offset, selected_tasks)
         else:
             curr_id = task_id
 
@@ -189,9 +192,9 @@ def get_fold_metrics_for_model(row, Xt, yt, Xv, yv):
 # In[13]:
 
 
-def get_cv_metrics_for_model_and_task(model_id, task_id, pool, n_repeats, counter, start_at):
+def get_cv_metrics_for_model_and_task(model_id, task_id, pool, n_repeats, counter, start_at, selected_tasks):
     
-    X, y, splitter, task_id = load_openml_task(task_id, offset=counter) # repeated runs will use cached data
+    X, y, splitter, task_id = load_openml_task(task_id, offset=counter, selected_tasks=selected_tasks) # repeated runs will use cached data
     
     promises = []
     for i, (train_idx, test_idx) in enumerate(splitter.split()):
@@ -225,6 +228,9 @@ def get_cv_metrics_for_model_and_task(model_id, task_id, pool, n_repeats, counte
 
 
 with multiprocessing.Pool(processes=n_procs) as pool:
+    
+    manager = multiprocessing.Manager()
+    selected_tasks = manager.list()
 
     start_at = 0
 
@@ -241,7 +247,7 @@ with multiprocessing.Pool(processes=n_procs) as pool:
     
     for model_id in MODELS.keys():
         for task_id in iter_tasks:
-            tmp, counter = get_cv_metrics_for_model_and_task(model_id, task_id, pool, 1, counter, start_at)
+            tmp, counter = get_cv_metrics_for_model_and_task(model_id, task_id, pool, 1, counter, start_at, selected_tasks)
             promises.extend(tmp)
             logging.info(f"{len(promises)} promises submitted to pool ({model_id, task_id})")
 
@@ -255,38 +261,35 @@ with multiprocessing.Pool(processes=n_procs) as pool:
         dump(df, output_file)
 
 
-# In[16]:
+# In[15]:
 
 
 if not is_notebook():
     exit()
 
 
-# In[7]:
+# In[80]:
 
 
-df = load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random/metrics_1601149607.dat")
+df = pandas.concat([
+    load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601279139.dat"),
+    load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601279176.dat")
+])
 
 
-# In[11]:
-
-
-df
-
-
-# In[8]:
+# In[81]:
 
 
 grouped_df = df.groupby(["model_id", "task_id", "repeat"]).aggregate("mean").drop(columns=["fold"]).reset_index()
 
 
-# In[9]:
+# In[82]:
 
 
 grouped_df
 
 
-# In[20]:
+# In[83]:
 
 
 def get_longform(df, cols=None, subject_cols=None):
@@ -311,82 +314,76 @@ def get_longform(df, cols=None, subject_cols=None):
     return pandas.concat(dfs)
 
 
-# In[21]:
+# In[84]:
 
 
 long_df = get_longform(grouped_df, grouped_df.columns[3:], ["model_id", "task_id"])
 
 
-# In[22]:
+# In[85]:
 
 
 long_df.shape
 
 
-# In[23]:
+# In[67]:
 
 
 long_df.head()
 
 
-# In[24]:
+# In[68]:
 
 
 seaborn.catplot(data=long_df[long_df["metric"].isin(["accuracy", "balanced_accuracy", "f1"])], x="model_id", y="value", col="metric", kind="box")
 
 
-# In[25]:
+# In[71]:
 
 
-seaborn.catplot(data=long_df[long_df["metric"].isin(["accuracy", "balanced_accuracy", "f1"])], x="task_id", y="value", col="metric", kind="box")
+seaborn.displot(data=long_df[long_df["metric"].isin(["ece", "ece_balanced", "peace"])], x="value", hue="metric", rug=True, kind="kde")
 
 
-# In[26]:
-
-
-seaborn.displot(data=long_df[long_df["metric"].isin(["ece", "ece_balanced", "peace"])], x="value", col="metric", rug=True, kind="kde")
-
-
-# In[27]:
+# In[70]:
 
 
 seaborn.boxenplot(data=long_df[long_df["metric"].isin(["ece", "ece_balanced", "peace"])], y="value", x="metric")
 
 
-# In[28]:
+# In[86]:
 
 
 long_df["metric_ord"] = long_df["metric"].map(lambda a: numpy.unique(long_df["metric"]).tolist().index(a))
 
 
-# In[29]:
+# In[91]:
 
 
-seaborn.lmplot(data=long_df[long_df["metric"].isin(["ece", "ece_balanced", "peace"])], y="value", x="metric_ord")
+(grouped_df["peace"] - grouped_df["ece"]).mean()
 
 
-# In[30]:
+# In[92]:
 
 
 import scipy.stats
 import scikit_posthocs as sp
 
 
-# In[31]:
+# In[93]:
 
 
 data = grouped_df.loc[grouped_df["repeat"] == 0, ["ece", "ece_balanced", "peace"]].values
 scipy.stats.friedmanchisquare(data[0], data[1], data[2])
 
 
-# In[32]:
+# In[43]:
 
 
 long_data = get_longform(grouped_df.loc[grouped_df["repeat"] == 0, ["ece", "ece_balanced", "peace"]])
 sp.posthoc_conover(long_data, val_col="value", group_col="metric", p_adjust="holm")
 
 
-# In[33]:
+# In[44]:
 
 
 for idx, model_df in grouped_df.groupby("model_id"):
@@ -399,7 +396,7 @@ for idx, model_df in grouped_df.groupby("model_id"):
         print(sp.posthoc_conover(long_data, val_col="value", group_col="metric", p_adjust="holm"))
 
 
-# In[34]:
+# In[45]:
 
 
 seaborn.catplot(data=long_df[long_df["metric"].isin(["ece", "ece_balanced", "peace"])], x="metric", y="value", col="model_id", kind="box")
