@@ -62,8 +62,16 @@ else:
 # In[4]:
 
 
-logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(asctime)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(name)s %(asctime)s - %(message)s')
 logging.captureWarnings(True)
+logging.getLogger("openml").setLevel(logging.ERROR)
+
+class NoRequestFilter(logging.Filter):
+    def filter(self, record):
+        return not "request for the URL" in record.getMessage()
+
+logging.getLogger("root").addFilter(NoRequestFilter())
+logging.getLogger().addFilter(NoRequestFilter())
 
 
 # In[5]:
@@ -72,7 +80,7 @@ logging.captureWarnings(True)
 numpy.random.seed(42)
 
 
-# In[18]:
+# In[6]:
 
 
 def find_random_task(selected_tasks):
@@ -89,7 +97,7 @@ def find_random_task(selected_tasks):
                 return task
 
 
-# In[19]:
+# In[7]:
 
 
 if random_tasks > 0:
@@ -98,7 +106,7 @@ else:
     TASKS = [9983, 9952, 3899, 219, 3954, 14964, 32, 6, 3510, 40, 9950, 53, 3512, 12, 3962, 39, 3577, 145682, 3794, 146824]
 
 
-# In[20]:
+# In[8]:
 
 
 def load_openml_task(task_id=None, selected_tasks=[]):
@@ -148,7 +156,7 @@ def load_openml_task(task_id=None, selected_tasks=[]):
                 raise e
 
 
-# In[23]:
+# In[11]:
 
 
 MODELS = {
@@ -162,7 +170,7 @@ MODELS = {
 }
 
 
-# In[24]:
+# In[ ]:
 
 
 def get_fold_metrics_for_model(row, Xt, yt, Xv, yv):
@@ -176,7 +184,7 @@ def get_fold_metrics_for_model(row, Xt, yt, Xv, yv):
     y_preds = model.predict(Xv)
     y_test = yv
 
-    bins = 15
+    bins = "fd"
     row.update({
         "accuracy": sklearn.metrics.accuracy_score(y_test, y_preds),
         "balanced_accuracy": sklearn.metrics.balanced_accuracy_score(y_test, y_preds),
@@ -191,7 +199,7 @@ def get_fold_metrics_for_model(row, Xt, yt, Xv, yv):
     return row
 
 
-# In[25]:
+# In[ ]:
 
 
 def get_cv_metrics_for_model_and_task(model_id, task_id, pool, n_repeats, counter, start_at, selected_tasks):
@@ -225,7 +233,7 @@ def get_cv_metrics_for_model_and_task(model_id, task_id, pool, n_repeats, counte
     return promises, counter
 
 
-# In[26]:
+# In[ ]:
 
 
 with multiprocessing.Pool(processes=n_procs) as pool:
@@ -272,7 +280,7 @@ if not is_notebook():
     exit()
 
 
-# In[6]:
+# In[ ]:
 
 
 df = pandas.concat([
@@ -280,6 +288,12 @@ df = pandas.concat([
     load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601279176.dat"),
     load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601279139.dat")
 ])
+
+
+# In[6]:
+
+
+df = load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601367377.dat")
 
 
 # In[7]:
@@ -355,7 +369,7 @@ long_df.head()
 seaborn.set_theme("paper", "whitegrid", font_scale=1.5)
 
 
-# In[60]:
+# In[16]:
 
 
 fig, ax = plt.subplots(figsize=(10, 6))
@@ -363,9 +377,9 @@ seaborn.boxplot(
     data=long_df[long_df["metric"].isin(["Accuracy", "Balanced Accuracy", "F1"])], 
     x="model_id", y="value", hue="metric", saturation=.7, ax=ax
 )
-seaborn.swarmplot(
+seaborn.stripplot(
     data=long_df[long_df["metric"].isin(["Accuracy", "Balanced Accuracy", "F1"])], 
-    x="model_id", y="value", hue="metric", dodge=True, color=".25", s=3, ax=ax
+    x="model_id", y="value", hue="metric", dodge=True, color=".25", s=4, alpha=.8, ax=ax
 )
 handles, labels = ax.get_legend_handles_labels()
 ax.set_xlabel("Model")
@@ -380,66 +394,66 @@ plt.legend(handles[:3], labels[:3], bbox_to_anchor=(0., 1.02, 1., .102), loc='lo
 plt.savefig("performance.pdf", bbox_inches="tight")
 
 
-# In[177]:
+# In[17]:
 
 
-seaborn.displot(data=long_df[long_df["metric"].isin(["ece", "ece_balanced", "peace"])], x="value", hue="metric", rug=True, kind="kde")
+cols = ["ECE", "Balanced ECE", "PEACE"]
 
 
-# In[178]:
+# In[18]:
 
 
-seaborn.displot(data=long_df[long_df["metric"].isin(["class_wise_ece", "class_wise_peace"])], x="value", hue="metric", rug=True, kind="kde")
+seaborn.displot(data=long_df[long_df["metric"].isin(cols)], x="value", hue="metric", rug=True, kind="kde")
 
 
-# In[21]:
+# In[19]:
 
 
-cols = ["ECE", "Balanced ECE", "PEACE", "cw-ECE", "cw-PEACE"]
-g = seaborn.boxplot(data=long_df[long_df["metric"].isin(cols)], y="value", x="metric")
-seaborn.stripplot(data=long_df[long_df["metric"].isin(["ECE", "Balanced ECE", "PEACE"])], x="metric", y="value", color=".25", s=3, alpha=.8)
+g = seaborn.violinplot(data=long_df[long_df["metric"].isin(cols)], y="value", x="metric")
+# seaborn.stripplot(data=long_df[long_df["metric"].isin(cols)], x="metric", y="value", color=".25", s=2, alpha=.8)
 g.set_xlabel("")
+g.set_ylabel("Metric value")
 plt.savefig("metrics.pdf")
 
 
-# In[33]:
+# In[ ]:
 
 
 long_df["metric_ord"] = long_df["metric"].map(lambda a: numpy.unique(long_df["metric"]).tolist().index(a))
 
 
-# In[34]:
+# In[20]:
 
 
-(grouped_df["peace"] - grouped_df["ece"]).mean()
+(grouped_df["PEACE"] - grouped_df["ECE"]).mean()
 
 
-# In[35]:
+# In[21]:
 
 
 import scipy.stats
 import scikit_posthocs as sp
 
 
-# In[36]:
+# In[22]:
 
 
-data = grouped_df.loc[grouped_df["repeat"] == 0, ["ece", "ece_balanced", "peace"]].values
+data = grouped_df.loc[grouped_df["repeat"] == 0, cols].values
 scipy.stats.friedmanchisquare(data[0], data[1], data[2])
 
 
-# In[37]:
+# In[23]:
 
 
-long_data = get_longform(grouped_df.loc[grouped_df["repeat"] == 0, ["ece", "ece_balanced", "peace"]])
+long_data = get_longform(grouped_df.loc[grouped_df["repeat"] == 0, cols])
 sp.posthoc_conover(long_data, val_col="value", group_col="metric", p_adjust="holm")
 
 
-# In[40]:
+# In[24]:
 
 
 for idx, model_df in grouped_df.groupby("model_id"):
-    data = model_df.loc[:, ["ece", "ece_balanced", "peace"]]
+    data = model_df.loc[:, cols]
     test = scipy.stats.friedmanchisquare(data.iloc[:, 0], data.iloc[:, 1], data.iloc[:, 2])
     print(idx)
     print(test)
@@ -450,8 +464,107 @@ for idx, model_df in grouped_df.groupby("model_id"):
     print("-"*20)
 
 
-# In[53]:
+# In[26]:
 
 
-seaborn.catplot(data=long_df[long_df["metric"].isin(["ece", "ece_balanced", "peace"])], x="metric", y="value", col="model_id", kind="violin")
+seaborn.catplot(data=long_df[long_df["metric"].isin(cols)], x="metric", y="value", col="model_id", kind="violin")
+
+
+# In[40]:
+
+
+scipy.stats.wilcoxon(x=grouped_df["ECE"], y=grouped_df["PEACE"])
+
+
+# In[33]:
+
+
+scipy.stats.wilcoxon(x=grouped_df["ECE"], y=grouped_df["Balanced ECE"], alternative="less")
+
+
+# In[42]:
+
+
+for idx, model_df in grouped_df.groupby("model_id"):
+    data = model_df.loc[:, cols]
+    test = scipy.stats.wilcoxon(x=data.iloc[:, 0], y=data.iloc[:, 2], alternative="less")
+    if test.pvalue < 0.05:
+        print("ECE << PEACE", idx, test)
+    else:
+        print("no significance")
+
+
+# In[26]:
+
+
+seaborn.catplot(data=long_df[long_df["metric"].isin(cols)], x="metric", y="value", col="model_id", kind="violin")
+
+
+# In[91]:
+
+
+def get_task_meta(task_id):
+    task = openml.tasks.get_task(task_id)
+    d = task.get_dataset()
+    return dict(
+        task_id = task_id,
+        n_classes = d.qualities["NumberOfClasses"],
+        n_features = d.qualities["NumberOfFeatures"],
+        n_instances = d.qualities["NumberOfInstances"]
+    )
+
+
+# In[92]:
+
+
+with multiprocessing.Pool(processes=multiprocessing.cpu_count()) as pool:
+    tasks = pool.map(get_task_meta, grouped_df["task_id"])
+
+
+# In[93]:
+
+
+tasks_meta = pandas.DataFrame(tasks).set_index("task_id").join(grouped_df.set_index("task_id"))
+
+
+# In[94]:
+
+
+tasks_meta["PEACE-ECE"] = tasks_meta["PEACE"] - tasks_meta["ECE"]
+
+
+# In[95]:
+
+
+tasks_meta["PEACE>ECE"] = tasks_meta["PEACE"] > tasks_meta["ECE"]
+
+
+# In[103]:
+
+
+tasks_meta["PEACE>=ECE"] = tasks_meta["PEACE"] >= tasks_meta["ECE"]
+
+
+# In[109]:
+
+
+seaborn.displot(data=tasks_meta, x="n_instances", col="PEACE>=ECE", kind="hist")
+
+
+# In[110]:
+
+
+seaborn.displot(data=tasks_meta, x="n_classes", col="PEACE>=ECE", kind="hist")
+
+
+# In[107]:
+
+
+seaborn.displot(data=tasks_meta, x="n_features", hue="PEACE>=ECE", kind="kde")
+
+
+# In[ ]:
+
+
+
 
