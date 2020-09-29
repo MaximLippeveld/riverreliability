@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[2]:
+# In[1]:
 
 
 import pandas
@@ -32,7 +32,7 @@ import time
 from joblib import load, dump
 
 
-# In[3]:
+# In[2]:
 
 
 def is_notebook():
@@ -43,7 +43,7 @@ def is_notebook():
         return False
 
 
-# In[4]:
+# In[3]:
 
 
 if is_notebook():
@@ -59,35 +59,37 @@ else:
     random_tasks = args.random_tasks
 
 
-# In[5]:
+# In[4]:
 
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(asctime)s - %(message)s')
 logging.captureWarnings(True)
 
 
-# In[6]:
+# In[5]:
 
 
 numpy.random.seed(42)
 
 
-# In[7]:
+# In[18]:
 
 
-def find_random_task(offset, selected_tasks):
+def find_random_task(selected_tasks):
+    tries = 0
     while True:
-        df = openml.tasks.list_tasks(task_type_id=1, offset=offset, output_format="dataframe", size=10000, status="active", number_missing_values=0)
+        df = openml.tasks.list_tasks(task_type_id=1, offset=tries*1000, output_format="dataframe", size=1000, status="active", number_missing_values=0)
+        tries += 1
         if "NumberOfInstances" in df:
-            df = df[(df["NumberOfInstances"] > 100) & (df["NumberOfInstances"] < 1000)]
+            df = df[(df["NumberOfInstances"] > 100) & (df["NumberOfInstances"] < 5000)]
+            df = df[~df["tid"].isin(list(selected_tasks))]
             if len(df) > 0:
                 task = df.sample(n=1).iloc[0]["tid"]
-                if task not in selected_tasks:
-                    selected_tasks.append(task)
-                    return task
+                selected_tasks.append(task)
+                return task
 
 
-# In[8]:
+# In[19]:
 
 
 if random_tasks > 0:
@@ -96,14 +98,14 @@ else:
     TASKS = [9983, 9952, 3899, 219, 3954, 14964, 32, 6, 3510, 40, 9950, 53, 3512, 12, 3962, 39, 3577, 145682, 3794, 146824]
 
 
-# In[9]:
+# In[20]:
 
 
-def load_openml_task(task_id=None, offset=0, selected_tasks=[]):
+def load_openml_task(task_id=None, selected_tasks=[]):
     
     while True:
         if task_id is None:
-            curr_id = find_random_task(offset, selected_tasks)
+            curr_id = find_random_task(selected_tasks)
         else:
             curr_id = task_id
 
@@ -146,7 +148,7 @@ def load_openml_task(task_id=None, offset=0, selected_tasks=[]):
                 raise e
 
 
-# In[12]:
+# In[23]:
 
 
 MODELS = {
@@ -160,7 +162,7 @@ MODELS = {
 }
 
 
-# In[13]:
+# In[24]:
 
 
 def get_fold_metrics_for_model(row, Xt, yt, Xv, yv):
@@ -189,11 +191,11 @@ def get_fold_metrics_for_model(row, Xt, yt, Xv, yv):
     return row
 
 
-# In[14]:
+# In[25]:
 
 
 def get_cv_metrics_for_model_and_task(model_id, task_id, pool, n_repeats, counter, start_at, selected_tasks):
-    X, y, splitter, task_id = load_openml_task(task_id, offset=counter, selected_tasks=selected_tasks) # repeated runs will use cached data
+    X, y, splitter, task_id = load_openml_task(task_id, selected_tasks=selected_tasks) # repeated runs will use cached data
 
     promises = []
     for i, (train_idx, test_idx) in enumerate(splitter.split()):
@@ -223,7 +225,7 @@ def get_cv_metrics_for_model_and_task(model_id, task_id, pool, n_repeats, counte
     return promises, counter
 
 
-# In[15]:
+# In[26]:
 
 
 with multiprocessing.Pool(processes=n_procs) as pool:
@@ -263,35 +265,48 @@ with multiprocessing.Pool(processes=n_procs) as pool:
             logging.exception("Exception when collecting results")
 
 
-# In[15]:
+# In[ ]:
 
 
 if not is_notebook():
     exit()
 
 
-# In[80]:
+# In[6]:
 
 
 df = pandas.concat([
-    load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601279139.dat"),
-    load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601279176.dat")
+    load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601296074.dat"),
+    load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601279176.dat"),
+    load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601279139.dat")
 ])
 
 
-# In[81]:
+# In[7]:
+
+
+df.head()
+
+
+# In[8]:
+
+
+df.columns = ["fold", "repeat", "model_id", "task_id", "Accuracy", "Balanced Accuracy", "F1", "ECE", "Balanced ECE", "PEACE", "cw-ECE", "cw-PEACE"]
+
+
+# In[9]:
 
 
 grouped_df = df.groupby(["model_id", "task_id", "repeat"]).aggregate("mean").drop(columns=["fold"]).reset_index()
 
 
-# In[82]:
+# In[10]:
 
 
 grouped_df
 
 
-# In[83]:
+# In[11]:
 
 
 def get_longform(df, cols=None, subject_cols=None):
@@ -316,76 +331,111 @@ def get_longform(df, cols=None, subject_cols=None):
     return pandas.concat(dfs)
 
 
-# In[84]:
+# In[12]:
 
 
 long_df = get_longform(grouped_df, grouped_df.columns[3:], ["model_id", "task_id"])
 
 
-# In[85]:
+# In[13]:
 
 
 long_df.shape
 
 
-# In[67]:
+# In[14]:
 
 
 long_df.head()
 
 
-# In[68]:
+# In[15]:
 
 
-seaborn.catplot(data=long_df[long_df["metric"].isin(["accuracy", "balanced_accuracy", "f1"])], x="model_id", y="value", col="metric", kind="box")
+seaborn.set_theme("paper", "whitegrid", font_scale=1.5)
 
 
-# In[71]:
+# In[60]:
+
+
+fig, ax = plt.subplots(figsize=(10, 6))
+seaborn.boxplot(
+    data=long_df[long_df["metric"].isin(["Accuracy", "Balanced Accuracy", "F1"])], 
+    x="model_id", y="value", hue="metric", saturation=.7, ax=ax
+)
+seaborn.swarmplot(
+    data=long_df[long_df["metric"].isin(["Accuracy", "Balanced Accuracy", "F1"])], 
+    x="model_id", y="value", hue="metric", dodge=True, color=".25", s=3, ax=ax
+)
+handles, labels = ax.get_legend_handles_labels()
+ax.set_xlabel("Model")
+ax.set_ylabel("Metric value")
+ax.set_ylim(0, 1)
+ax.set_xticklabels(
+    ["AdaBoost", "Decision Tree", "Logistic Regression", "Multi-layer Perceptron", "Gaussian Naive Bayes", "Random Forest", "SVM"],
+    rotation=-30, ha="left")
+
+plt.legend(handles[:3], labels[:3], bbox_to_anchor=(0., 1.02, 1., .102), loc='lower right',
+           ncol=3, borderaxespad=0.)
+plt.savefig("performance.pdf", bbox_inches="tight")
+
+
+# In[177]:
 
 
 seaborn.displot(data=long_df[long_df["metric"].isin(["ece", "ece_balanced", "peace"])], x="value", hue="metric", rug=True, kind="kde")
 
 
-# In[70]:
+# In[178]:
 
 
-seaborn.boxenplot(data=long_df[long_df["metric"].isin(["ece", "ece_balanced", "peace"])], y="value", x="metric")
+seaborn.displot(data=long_df[long_df["metric"].isin(["class_wise_ece", "class_wise_peace"])], x="value", hue="metric", rug=True, kind="kde")
 
 
-# In[86]:
+# In[21]:
+
+
+cols = ["ECE", "Balanced ECE", "PEACE", "cw-ECE", "cw-PEACE"]
+g = seaborn.boxplot(data=long_df[long_df["metric"].isin(cols)], y="value", x="metric")
+seaborn.stripplot(data=long_df[long_df["metric"].isin(["ECE", "Balanced ECE", "PEACE"])], x="metric", y="value", color=".25", s=3, alpha=.8)
+g.set_xlabel("")
+plt.savefig("metrics.pdf")
+
+
+# In[33]:
 
 
 long_df["metric_ord"] = long_df["metric"].map(lambda a: numpy.unique(long_df["metric"]).tolist().index(a))
 
 
-# In[91]:
+# In[34]:
 
 
 (grouped_df["peace"] - grouped_df["ece"]).mean()
 
 
-# In[92]:
+# In[35]:
 
 
 import scipy.stats
 import scikit_posthocs as sp
 
 
-# In[93]:
+# In[36]:
 
 
 data = grouped_df.loc[grouped_df["repeat"] == 0, ["ece", "ece_balanced", "peace"]].values
 scipy.stats.friedmanchisquare(data[0], data[1], data[2])
 
 
-# In[43]:
+# In[37]:
 
 
 long_data = get_longform(grouped_df.loc[grouped_df["repeat"] == 0, ["ece", "ece_balanced", "peace"]])
 sp.posthoc_conover(long_data, val_col="value", group_col="metric", p_adjust="holm")
 
 
-# In[44]:
+# In[40]:
 
 
 for idx, model_df in grouped_df.groupby("model_id"):
@@ -393,13 +443,15 @@ for idx, model_df in grouped_df.groupby("model_id"):
     test = scipy.stats.friedmanchisquare(data.iloc[:, 0], data.iloc[:, 1], data.iloc[:, 2])
     print(idx)
     print(test)
+    
     if test.pvalue < 0.05:
         long_data = get_longform(data)
         print(sp.posthoc_conover(long_data, val_col="value", group_col="metric", p_adjust="holm"))
+    print("-"*20)
 
 
-# In[45]:
+# In[53]:
 
 
-seaborn.catplot(data=long_df[long_df["metric"].isin(["ece", "ece_balanced", "peace"])], x="metric", y="value", col="model_id", kind="box")
+seaborn.catplot(data=long_df[long_df["metric"].isin(["ece", "ece_balanced", "peace"])], x="metric", y="value", col="model_id", kind="violin")
 
