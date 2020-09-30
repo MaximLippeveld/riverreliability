@@ -48,7 +48,7 @@ def is_notebook():
 
 if is_notebook():
     n_procs = multiprocessing.cpu_count()//2
-    random_tasks = 1
+    random_tasks = 5
 else:
     import argparse
     parser = argparse.ArgumentParser()
@@ -170,7 +170,7 @@ MODELS = {
 }
 
 
-# In[13]:
+# In[12]:
 
 
 def fit_and_predict(model_id, Xt, yt, Xv, yv):
@@ -185,7 +185,7 @@ def fit_and_predict(model_id, Xt, yt, Xv, yv):
     return y_probs, y_preds, yv
 
 
-# In[14]:
+# In[13]:
 
 
 def get_cv_metrics_for_model_and_task(model_id, task_id, pool, counter, start_at, selected_tasks):
@@ -216,13 +216,10 @@ def get_cv_metrics_for_model_and_task(model_id, task_id, pool, counter, start_at
     return row, promises, counter
 
 
-# In[15]:
+# In[16]:
 
 
 with multiprocessing.Pool(processes=n_procs) as pool:
-    
-    manager = multiprocessing.Manager()
-    selected_tasks = manager.list()
 
     start_at = 0
 
@@ -234,14 +231,18 @@ with multiprocessing.Pool(processes=n_procs) as pool:
     
     if type(TASKS) is int:
         iter_tasks = []
+        tmp_tasks = []
         for i in range(TASKS):
-            _, _, _, task = load_openml_task(selected_tasks=iter_tasks)
+            _, _, _, task = load_openml_task(selected_tasks=tmp_tasks)
+            iter_tasks.append(task)
     else:
         iter_tasks = TASKS
+        
+    logging.info(f"Tasks: {iter_tasks}")
     
     for model_id in MODELS.keys():
         for task_id in iter_tasks:
-            row, tmp, counter = get_cv_metrics_for_model_and_task(model_id, task_id, pool, counter, start_at, selected_tasks)
+            row, tmp, counter = get_cv_metrics_for_model_and_task(model_id, task_id, pool, counter, start_at, [])
             promises.append((row, tmp))
             logging.info(f"{len(promises)} tasks submitted to pool ({model_id})")
 
