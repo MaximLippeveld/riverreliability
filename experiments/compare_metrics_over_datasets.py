@@ -43,12 +43,12 @@ def is_notebook():
         return False
 
 
-# In[3]:
+# In[22]:
 
 
 if is_notebook():
     n_procs = multiprocessing.cpu_count()//2
-    random_tasks = 5
+    random_tasks = 2
 else:
     import argparse
     parser = argparse.ArgumentParser()
@@ -59,7 +59,7 @@ else:
     random_tasks = args.random_tasks
 
 
-# In[4]:
+# In[23]:
 
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(name)s %(asctime)s - %(message)s')
@@ -74,13 +74,13 @@ logging.getLogger("root").addFilter(NoRequestFilter())
 logging.getLogger().addFilter(NoRequestFilter())
 
 
-# In[5]:
+# In[24]:
 
 
 numpy.random.seed(42)
 
 
-# In[6]:
+# In[25]:
 
 
 def find_random_task(selected_tasks):
@@ -97,7 +97,7 @@ def find_random_task(selected_tasks):
                 return task
 
 
-# In[7]:
+# In[26]:
 
 
 if random_tasks > 0:
@@ -106,7 +106,7 @@ else:
     TASKS = [9983, 9952, 3899, 219, 3954, 14964, 32, 6, 3510, 40, 9950, 53, 3512, 12, 3962, 39, 3577, 145682, 3794, 146824]
 
 
-# In[8]:
+# In[27]:
 
 
 def load_openml_task(task_id=None, selected_tasks=[]):
@@ -156,7 +156,7 @@ def load_openml_task(task_id=None, selected_tasks=[]):
                 raise e
 
 
-# In[11]:
+# In[30]:
 
 
 MODELS = {
@@ -170,7 +170,7 @@ MODELS = {
 }
 
 
-# In[12]:
+# In[31]:
 
 
 def fit_and_predict(model_id, Xt, yt, Xv, yv):
@@ -185,7 +185,7 @@ def fit_and_predict(model_id, Xt, yt, Xv, yv):
     return y_probs, y_preds, yv
 
 
-# In[13]:
+# In[32]:
 
 
 def get_cv_metrics_for_model_and_task(model_id, task_id, pool, counter, start_at, selected_tasks):
@@ -216,7 +216,7 @@ def get_cv_metrics_for_model_and_task(model_id, task_id, pool, counter, start_at
     return row, promises, counter
 
 
-# In[16]:
+# In[33]:
 
 
 with multiprocessing.Pool(processes=n_procs) as pool:
@@ -226,7 +226,6 @@ with multiprocessing.Pool(processes=n_procs) as pool:
     output_file = f"metrics_{int(time.time())}.dat"
     logging.info(f"Output to {output_file}")
 
-    promises = []
     counter = 0
     
     if type(TASKS) is int:
@@ -240,50 +239,54 @@ with multiprocessing.Pool(processes=n_procs) as pool:
         
     logging.info(f"Tasks: {iter_tasks}")
     
+    data = []
     for model_id in MODELS.keys():
+        
+        logging.info(f"Start submitting promises for {model_id}")
+        
+        promises = []
         for task_id in iter_tasks:
             row, tmp, counter = get_cv_metrics_for_model_and_task(model_id, task_id, pool, counter, start_at, [])
             promises.append((row, tmp))
             logging.info(f"{len(promises)} tasks submitted to pool ({model_id})")
+        logging.info(f"All {len(promises)} tasks submitted to pool ({model_id})")
 
-    logging.info(f"{len(promises)} tasks submitted to pool")
+        for i, (row, promise) in enumerate(promises):
+            try:
+                y_probs, y_preds, y_test = [], [], []
+                for x in promise:
+                    x = x.get()
+                    y_probs.extend(x[0])
+                    y_preds.extend(x[1])
+                    y_test.extend(x[2])
 
-    data = []
-    for row, promise in promises:
-        try:
-            y_probs, y_preds, y_test = [], [], []
-            for x in promise:
-                x = x.get()
-                y_probs.extend(x[0])
-                y_preds.extend(x[1])
-                y_test.extend(x[2])
-            
-            # stack fold results and compute metrics
-            y_probs = numpy.array(y_probs)
-            y_probs_max = y_probs.max(axis=1)
-            y_preds = numpy.array(y_preds)
-            y_test = numpy.array(y_test)
-                
-            bins = 15
-            row.update({
-                "accuracy": sklearn.metrics.accuracy_score(y_test, y_preds),
-                "balanced_accuracy": sklearn.metrics.balanced_accuracy_score(y_test, y_preds),
-                "f1": sklearn.metrics.f1_score(y_test, y_preds, average="weighted"),
-                'ece': metrics.ece(y_probs_max, y_preds, y_test, bins=bins),
-                'ece_balanced': metrics.ece(y_probs_max, y_preds, y_test, balanced=True, bins=bins),
-                'peace': metrics.peace(y_probs_max, y_preds, y_test, bins=bins),
-                'class_wise_ece': metrics.class_wise_error(y_probs, y_preds, y_test, metrics.ece, bins=bins),
-                'class_wise_peace': metrics.class_wise_error(y_probs, y_preds, y_test, metrics.peace, bins=bins)
-            })
-            
-            # update data and dump intermediate dataframe
-            data.append(row)
-            df = pandas.DataFrame(data)
-            dump(df, output_file)
-            
-            logging.info(f"Finished tasks: {len(data)}/{len(promises)} ({len(data)/len(promises)*100:.2f}%)")
-        except Exception:
-            logging.exception("Exception when collecting results")
+                # stack fold results and compute metrics
+                y_probs = numpy.array(y_probs)
+                logging.debug(y_probs.shape)
+                y_probs_max = y_probs.max(axis=1)
+                y_preds = numpy.array(y_preds)
+                y_test = numpy.array(y_test)
+
+                bins = 15
+                row.update({
+                    "accuracy": sklearn.metrics.accuracy_score(y_test, y_preds),
+                    "balanced_accuracy": sklearn.metrics.balanced_accuracy_score(y_test, y_preds),
+                    "f1": sklearn.metrics.f1_score(y_test, y_preds, average="weighted"),
+                    'ece': metrics.ece(y_probs_max, y_preds, y_test, bins=bins),
+                    'ece_balanced': metrics.ece(y_probs_max, y_preds, y_test, balanced=True, bins=bins),
+                    'peace': metrics.peace(y_probs_max, y_preds, y_test, bins=bins),
+                    'class_wise_ece': metrics.class_wise_error(y_probs, y_preds, y_test, metrics.ece, bins=bins),
+                    'class_wise_peace': metrics.class_wise_error(y_probs, y_preds, y_test, metrics.peace, bins=bins)
+                })
+
+                # update data and dump intermediate dataframe
+                data.append(row)
+                df = pandas.DataFrame(data)
+                dump(df, output_file)
+
+                logging.info(f"Finished tasks: {i+1}/{len(promises)} ({(i+1)/len(promises)*100:.2f}%)")
+            except Exception:
+                logging.exception("Exception when collecting results")
 
 
 # In[ ]:
@@ -299,16 +302,10 @@ if not is_notebook():
 df = load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601367377.dat")
 
 
-# In[19]:
+# In[34]:
 
 
-df = load("metrics_1601458186.dat")
-
-
-# In[20]:
-
-
-df.head()
+df = load("metrics_1601494055.dat")
 
 
 # In[23]:
