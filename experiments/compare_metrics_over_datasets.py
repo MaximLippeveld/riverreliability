@@ -156,7 +156,7 @@ def load_openml_task(task_id=None, selected_tasks=[]):
                 raise e
 
 
-# In[11]:
+# In[17]:
 
 
 MODELS = {
@@ -170,70 +170,54 @@ MODELS = {
 }
 
 
-# In[ ]:
+# In[11]:
 
 
-def get_fold_metrics_for_model(row, Xt, yt, Xv, yv):
+def fit_and_predict(model_id, Xt, yt, Xv, yv):
     # get and fit fresh model
-    model = sklearn.base.clone(MODELS[row["model_id"]])
+    model = sklearn.base.clone(MODELS[model_id])
     model.fit(Xt, yt)
 
-    # compute metrics on test data
+    # predict on test
     y_probs = model.predict_proba(Xv)
     y_probs_max = y_probs.max(axis=1)
     y_preds = model.predict(Xv)
-    y_test = yv
-
-    bins = "fd"
-    row.update({
-        "accuracy": sklearn.metrics.accuracy_score(y_test, y_preds),
-        "balanced_accuracy": sklearn.metrics.balanced_accuracy_score(y_test, y_preds),
-        "f1": sklearn.metrics.f1_score(y_test, y_preds, average="weighted"),
-        'ece': metrics.ece(y_probs_max, y_preds, y_test, bins=bins),
-        'ece_balanced': metrics.ece(y_probs_max, y_preds, y_test, balanced=True, bins=bins),
-        'peace': metrics.peace(y_probs_max, y_preds, y_test, bins=bins),
-        'class_wise_ece': metrics.class_wise_error(y_probs, y_preds, y_test, metrics.ece, bins=bins),
-        'class_wise_peace': metrics.class_wise_error(y_probs, y_preds, y_test, metrics.peace, bins=bins)
-    })
     
-    return row
+    return y_probs, y_preds, yv
 
 
-# In[ ]:
+# In[12]:
 
 
-def get_cv_metrics_for_model_and_task(model_id, task_id, pool, n_repeats, counter, start_at, selected_tasks):
+def get_cv_metrics_for_model_and_task(model_id, task_id, pool, counter, start_at, selected_tasks):
     X, y, splitter, task_id = load_openml_task(task_id, selected_tasks=selected_tasks) # repeated runs will use cached data
+    
+    row = {
+        "model_id": model_id,
+        "task_id": task_id,
+    }
 
     promises = []
     for i, (train_idx, test_idx) in enumerate(splitter.split()):
-        for j in range(n_repeats):
-            counter += 1
-            if counter < start_at:
-                continue
+        counter += 1
+        if counter < start_at:
+            continue
 
-            row = {
-                "fold": i,
-                "repeat": j,
-                "model_id": model_id,
-                "task_id": task_id,
-            }
+        # split data
+        Xt, yt = X[train_idx], y[train_idx]
+        Xv, yv = X[test_idx], y[test_idx]
 
-            # split data
-            Xt, yt = X[train_idx], y[train_idx]
-            Xv, yv = X[test_idx], y[test_idx]
-
-            promise = pool.apply_async(
-                get_fold_metrics_for_model,
-                (row, Xt, yt, Xv, yv)
-            )
-            promises.append(promise)
+        promise = pool.apply_async(
+            fit_and_predict,
+            (model_id, Xt, yt, Xv, yv)
+        )
+        promises.append(promise)
 
     logging.info(f"Promises for single cv: {len(promises)}")
-    return promises, counter
+    return row, promises, counter
 
 
-# In[ ]:
+# In[18]:
 
 
 with multiprocessing.Pool(processes=n_procs) as pool:
@@ -256,19 +240,46 @@ with multiprocessing.Pool(processes=n_procs) as pool:
     
     for model_id in MODELS.keys():
         for task_id in iter_tasks:
-            tmp, counter = get_cv_metrics_for_model_and_task(model_id, task_id, pool, 1, counter, start_at, selected_tasks)
-            promises.extend(tmp)
-            logging.info(f"{len(promises)} promises submitted to pool ({model_id, task_id})")
+            row, tmp, counter = get_cv_metrics_for_model_and_task(model_id, task_id, pool, counter, start_at, selected_tasks)
+            promises.append((row, tmp))
+            logging.info(f"{len(promises)} tasks submitted to pool ({model_id})")
 
-    logging.info(f"{len(promises)} promises submitted to pool")
+    logging.info(f"{len(promises)} tasks submitted to pool")
 
     data = []
-    for promise in promises:
+    for row, promise in promises:
         try:
-            data.append(promise.get())
-            logging.info(f"Finished promises: {len(data)}/{len(promises)} ({len(data)/len(promises)*100:.2f}%)")
+            y_probs, y_preds, y_test = [], [], []
+            for x in promise:
+                x = x.get()
+                y_probs.extend(x[0])
+                y_preds.extend(x[1])
+                y_test.extend(x[2])
+            
+            # stack fold results and compute metrics
+            y_probs = numpy.array(y_probs)
+            y_probs_max = y_probs.max(axis=1)
+            y_preds = numpy.array(y_preds)
+            y_test = numpy.array(y_test)
+                
+            bins = 15
+            row.update({
+                "accuracy": sklearn.metrics.accuracy_score(y_test, y_preds),
+                "balanced_accuracy": sklearn.metrics.balanced_accuracy_score(y_test, y_preds),
+                "f1": sklearn.metrics.f1_score(y_test, y_preds, average="weighted"),
+                'ece': metrics.ece(y_probs_max, y_preds, y_test, bins=bins),
+                'ece_balanced': metrics.ece(y_probs_max, y_preds, y_test, balanced=True, bins=bins),
+                'peace': metrics.peace(y_probs_max, y_preds, y_test, bins=bins),
+                'class_wise_ece': metrics.class_wise_error(y_probs, y_preds, y_test, metrics.ece, bins=bins),
+                'class_wise_peace': metrics.class_wise_error(y_probs, y_preds, y_test, metrics.peace, bins=bins)
+            })
+            
+            # update data and dump intermediate dataframe
+            data.append(row)
             df = pandas.DataFrame(data)
             dump(df, output_file)
+            
+            logging.info(f"Finished tasks: {len(data)}/{len(promises)} ({len(data)/len(promises)*100:.2f}%)")
         except Exception:
             logging.exception("Exception when collecting results")
 
@@ -280,47 +291,31 @@ if not is_notebook():
     exit()
 
 
-# In[ ]:
-
-
-df = pandas.concat([
-    load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601296074.dat"),
-    load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601279176.dat"),
-    load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601279139.dat")
-])
-
-
-# In[6]:
+# In[12]:
 
 
 df = load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601367377.dat")
 
 
-# In[7]:
+# In[19]:
+
+
+df = load("metrics_1601458186.dat")
+
+
+# In[20]:
 
 
 df.head()
 
 
-# In[8]:
+# In[23]:
 
 
-df.columns = ["fold", "repeat", "model_id", "task_id", "Accuracy", "Balanced Accuracy", "F1", "ECE", "Balanced ECE", "PEACE", "cw-ECE", "cw-PEACE"]
+df.columns = ["model_id", "task_id", "Accuracy", "Balanced Accuracy", "F1", "ECE", "Balanced ECE", "PEACE", "cw-ECE", "cw-PEACE"]
 
 
-# In[9]:
-
-
-grouped_df = df.groupby(["model_id", "task_id", "repeat"]).aggregate("mean").drop(columns=["fold"]).reset_index()
-
-
-# In[10]:
-
-
-grouped_df
-
-
-# In[11]:
+# In[25]:
 
 
 def get_longform(df, cols=None, subject_cols=None):
@@ -345,31 +340,31 @@ def get_longform(df, cols=None, subject_cols=None):
     return pandas.concat(dfs)
 
 
-# In[12]:
+# In[26]:
 
 
-long_df = get_longform(grouped_df, grouped_df.columns[3:], ["model_id", "task_id"])
+long_df = get_longform(df, df.columns[2:], ["model_id", "task_id"])
 
 
-# In[13]:
+# In[27]:
 
 
 long_df.shape
 
 
-# In[14]:
+# In[28]:
 
 
 long_df.head()
 
 
-# In[15]:
+# In[29]:
 
 
 seaborn.set_theme("paper", "whitegrid", font_scale=1.5)
 
 
-# In[16]:
+# In[30]:
 
 
 fig, ax = plt.subplots(figsize=(10, 6))
@@ -379,7 +374,7 @@ seaborn.boxplot(
 )
 seaborn.stripplot(
     data=long_df[long_df["metric"].isin(["Accuracy", "Balanced Accuracy", "F1"])], 
-    x="model_id", y="value", hue="metric", dodge=True, color=".25", s=4, alpha=.8, ax=ax
+    x="model_id", y="value", hue="metric", dodge=True, color=".25", s=3, alpha=.8, ax=ax
 )
 handles, labels = ax.get_legend_handles_labels()
 ax.set_xlabel("Model")
@@ -394,38 +389,38 @@ plt.legend(handles[:3], labels[:3], bbox_to_anchor=(0., 1.02, 1., .102), loc='lo
 plt.savefig("performance.pdf", bbox_inches="tight")
 
 
-# In[17]:
+# In[31]:
 
 
 cols = ["ECE", "Balanced ECE", "PEACE"]
 
 
-# In[18]:
+# In[32]:
 
 
 seaborn.displot(data=long_df[long_df["metric"].isin(cols)], x="value", hue="metric", rug=True, kind="kde")
 
 
-# In[19]:
+# In[34]:
 
 
 g = seaborn.violinplot(data=long_df[long_df["metric"].isin(cols)], y="value", x="metric")
-# seaborn.stripplot(data=long_df[long_df["metric"].isin(cols)], x="metric", y="value", color=".25", s=2, alpha=.8)
+seaborn.stripplot(data=long_df[long_df["metric"].isin(cols)], x="metric", y="value", color=".25", s=2, alpha=.8)
 g.set_xlabel("")
 g.set_ylabel("Metric value")
-plt.savefig("metrics.pdf")
+# plt.savefig("metrics.pdf")
 
 
-# In[ ]:
+# In[35]:
 
 
 long_df["metric_ord"] = long_df["metric"].map(lambda a: numpy.unique(long_df["metric"]).tolist().index(a))
 
 
-# In[20]:
+# In[36]:
 
 
-(grouped_df["PEACE"] - grouped_df["ECE"]).mean()
+(df["PEACE"] - df["ECE"]).mean()
 
 
 # In[21]:
@@ -462,36 +457,6 @@ for idx, model_df in grouped_df.groupby("model_id"):
         long_data = get_longform(data)
         print(sp.posthoc_conover(long_data, val_col="value", group_col="metric", p_adjust="holm"))
     print("-"*20)
-
-
-# In[26]:
-
-
-seaborn.catplot(data=long_df[long_df["metric"].isin(cols)], x="metric", y="value", col="model_id", kind="violin")
-
-
-# In[40]:
-
-
-scipy.stats.wilcoxon(x=grouped_df["ECE"], y=grouped_df["PEACE"])
-
-
-# In[33]:
-
-
-scipy.stats.wilcoxon(x=grouped_df["ECE"], y=grouped_df["Balanced ECE"], alternative="less")
-
-
-# In[42]:
-
-
-for idx, model_df in grouped_df.groupby("model_id"):
-    data = model_df.loc[:, cols]
-    test = scipy.stats.wilcoxon(x=data.iloc[:, 0], y=data.iloc[:, 2], alternative="less")
-    if test.pvalue < 0.05:
-        print("ECE << PEACE", idx, test)
-    else:
-        print("no significance")
 
 
 # In[26]:
@@ -561,6 +526,112 @@ seaborn.displot(data=tasks_meta, x="n_classes", col="PEACE>=ECE", kind="hist")
 
 
 seaborn.displot(data=tasks_meta, x="n_features", hue="PEACE>=ECE", kind="kde")
+
+
+# In[21]:
+
+
+from functools import partial
+
+
+# In[22]:
+
+
+row = grouped_df.iloc[(grouped_df["PEACE"] - grouped_df["ECE"]).sort_values().index[0]]
+
+
+# In[23]:
+
+
+def func(model):
+    X, y, splitter, task_id = load_openml_task(row["task_id"])
+
+    y_probs = [[]]*splitter.get_n_splits()
+    y_preds = [[]]*splitter.get_n_splits()
+    y_test = [[]]*splitter.get_n_splits()
+
+    for i, (train_idx, test_idx) in enumerate(splitter.split()):
+        # split data
+        Xt, yt = X[train_idx], y[train_idx]
+        Xv, yv = X[test_idx], y[test_idx]
+
+        # train adaboost
+        model_instance = model()
+        model_instance.fit(Xt, yt)
+
+        y_probs[i] = model_instance.predict_proba(Xv)
+        y_preds[i] = model_instance.predict(Xv)
+        y_test[i] = yv
+        
+    return y_probs, y_preds, y_test
+
+
+# In[24]:
+
+
+ada_data = func(sklearn.ensemble.AdaBoostClassifier)
+
+
+# In[25]:
+
+
+logreg_data = func(partial(sklearn.linear_model.LogisticRegression, max_iter=1000))
+
+
+# In[26]:
+
+
+svm_data = func(partial(sklearn.svm.SVC, max_iter=1000, probability=True))
+
+
+# In[27]:
+
+
+mlp_data = func(partial(sklearn.neural_network.MLPClassifier, max_iter=1000))
+
+
+# In[28]:
+
+
+rf_data = func(sklearn.ensemble.RandomForestClassifier)
+
+
+# In[30]:
+
+
+fig, axes = plt.subplots(1, 5, sharex=True, sharey=True, figsize=(20, 4))
+
+for ax, data in zip(axes, [ada_data, logreg_data, svm_data, mlp_data, rf_data]):
+    y_probs = numpy.hstack([p.max(axis=1) for p in data[0]])
+    y_preds = numpy.hstack(data[1])
+    y_test = numpy.hstack(data[2])
+    ax.set_title(f"ECE: {metrics.ece(y_probs, y_preds, y_test, bins=15):.3f}, PEACE: {metrics.peace(y_probs, y_preds, y_test, bins=15):.3f}")
+
+    seaborn.histplot(y_probs, ax=ax, bins=numpy.histogram_bin_edges(y_probs, bins=15, range=(0,1)))
+
+
+# In[31]:
+
+
+plots.river_reliability_diagram(mlp_data[0][i].max(axis=1), mlp_data[1][i], mlp_data[2][i], bins=15)
+
+
+# In[45]:
+
+
+plots.river_reliability_diagram(logreg_data[0][i].max(axis=1), logreg_data[1][i], logreg_data[2][i], bins=15)
+
+
+# In[46]:
+
+
+plots.confidence_reliability_diagram(ada_data[0][i].max(axis=1), ada_data[1][i], ada_data[2][i], bins=15)
+
+
+# In[47]:
+
+
+plots.confidence_reliability_diagram(logreg_data[0][i].max(axis=1), logreg_data[1][i], logreg_data[2][i], bins=15)
 
 
 # In[ ]:
