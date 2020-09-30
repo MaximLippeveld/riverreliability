@@ -180,7 +180,6 @@ def fit_and_predict(model_id, Xt, yt, Xv, yv):
 
     # predict on test
     y_probs = model.predict_proba(Xv)
-    y_probs_max = y_probs.max(axis=1)
     y_preds = model.predict(Xv)
     
     return y_probs, y_preds, yv
