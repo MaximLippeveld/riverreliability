@@ -156,7 +156,7 @@ def load_openml_task(task_id=None, selected_tasks=[]):
                 raise e
 
 
-# In[17]:
+# In[11]:
 
 
 MODELS = {
@@ -170,7 +170,7 @@ MODELS = {
 }
 
 
-# In[11]:
+# In[13]:
 
 
 def fit_and_predict(model_id, Xt, yt, Xv, yv):
@@ -185,7 +185,7 @@ def fit_and_predict(model_id, Xt, yt, Xv, yv):
     return y_probs, y_preds, yv
 
 
-# In[12]:
+# In[14]:
 
 
 def get_cv_metrics_for_model_and_task(model_id, task_id, pool, counter, start_at, selected_tasks):
@@ -216,7 +216,7 @@ def get_cv_metrics_for_model_and_task(model_id, task_id, pool, counter, start_at
     return row, promises, counter
 
 
-# In[18]:
+# In[15]:
 
 
 with multiprocessing.Pool(processes=n_procs) as pool:
@@ -233,7 +233,9 @@ with multiprocessing.Pool(processes=n_procs) as pool:
     counter = 0
     
     if type(TASKS) is int:
-        iter_tasks = [None]*TASKS
+        iter_tasks = []
+        for i in range(TASKS):
+            iter_tasks.append(find_random_task(iter_tasks))
     else:
         iter_tasks = TASKS
     
