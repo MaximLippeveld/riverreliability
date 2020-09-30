@@ -151,7 +151,7 @@ def load_openml_task(task_id=None, selected_tasks=[]):
             splitter = sklearn.model_selection.PredefinedSplit(folds)
 
             return X, y, splitter, curr_id
-        except:
+        except Exception as e:
             if task_id is not None:
                 raise e
 
@@ -235,7 +235,7 @@ with multiprocessing.Pool(processes=n_procs) as pool:
     if type(TASKS) is int:
         iter_tasks = []
         for i in range(TASKS):
-            iter_tasks.append(find_random_task(iter_tasks))
+            _, _, _, task = load_openml_task(selected_tasks=iter_tasks)
     else:
         iter_tasks = TASKS
     
