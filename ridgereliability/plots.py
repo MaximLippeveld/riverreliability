@@ -78,7 +78,7 @@ def _get_beta_pdf(dist):
 
     return a, b, pdf, x
 
-def _pre_plot_checks(y_probs, y_preds, y_true, ax, ci, required_axes=None):
+def _pre_plot_checks(y_probs, y_preds, y_true, ax, ci=None, required_axes=None):
     """Perform some pre-plotting checks on input data, create required axes if necessary and compute number of classes."""
 
     num_classes = len(sklearn.utils.multiclass.unique_labels(y_preds, y_true))
@@ -288,7 +288,7 @@ def bar_diagram(edges:np.array, bin_accuracies:np.array, bin_confidences:np.arra
 
 # Cell
 
-def confidence_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np.array, ax:matplotlib.axes.Axes, bins="fd", balanced:bool=True):
+def confidence_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np.array, ax:matplotlib.axes.Axes=None, bins="fd", balanced:bool=True):
     """Plot a confidence reliability diagram.
 
     Arguments:
@@ -299,6 +299,8 @@ def confidence_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np
     bins -- Description of amount of bins in which to divide prediction confidences (see `numpy.histogram_bin_edges` for options)
     balanced -- Flag for using balanced accuracy score
     """
+
+    num_classes, ax = _pre_plot_checks(y_probs, y_preds, y_true, ax, required_axes=1)
 
     bin_indices, edges = utils.get_bin_indices(y_probs, bins, 0.0, 1.0, return_edges=True)
     unique_bin_indices = sorted(np.unique(bin_indices))

@@ -34,6 +34,9 @@ def peace(y_probs, y_preds, y_true, samples=1000, bins="fd"):
 
     """
 
+    sklearn.utils.check_consistent_length(y_preds, y_true)
+    classes = sklearn.utils.multiclass.unique_labels(y_preds, y_true)
+
     # define the bin function
     def bin_func(y_probs_bin, y_preds_bin, y_true_bin):
 
@@ -42,7 +45,7 @@ def peace(y_probs, y_preds, y_true, samples=1000, bins="fd"):
 
         if len(np.unique(y_preds_bin)) > 1:
             # estimate beta parameters
-            confusion = sklearn.metrics.confusion_matrix(y_true_bin, y_preds_bin)
+            confusion = sklearn.metrics.confusion_matrix(y_true_bin, y_preds_bin, labels=classes)
             params = ridgereliability.beta.get_beta_parameters(confusion)
             ys = abs(xs - conf) * ridgereliability.beta.beta_avg_pdf(xs, params, fft=True)
         else:
@@ -53,7 +56,7 @@ def peace(y_probs, y_preds, y_true, samples=1000, bins="fd"):
         return scipy.integrate.simps(ys, xs)
 
     # compute the full result
-    bin_indices = utils.get_bin_indices(y_probs, bins=bins)
+    bin_indices = utils.get_bin_indices(y_probs, bins=bins, lower=0, upper=1)
     return utils.binning(y_probs, y_preds, y_true, bin_indices, bin_func)
 
 # Cell
@@ -71,6 +74,8 @@ def ece(y_probs, y_preds, y_true, balanced=False, bins="fd"):
 
     """
 
+    sklearn.utils.check_consistent_length(y_preds, y_true)
+
     # define the bin function
     def bin_func(y_probs_bin, y_preds_bin, y_true_bin):
         acc = (y_preds_bin == y_true_bin).mean()
@@ -84,7 +89,7 @@ def ece(y_probs, y_preds, y_true, balanced=False, bins="fd"):
         return abs(balacc - conf)
 
     # compute the full result
-    bin_indices = utils.get_bin_indices(y_probs, bins=bins)
+    bin_indices = utils.get_bin_indices(y_probs, bins=bins, lower=0, upper=1)
     func = balanced_bin_func if balanced else bin_func
     return utils.binning(y_probs, y_preds, y_true, bin_indices, func)
 
@@ -103,15 +108,18 @@ def ece_v2(y_probs, y_preds, y_true, bins="fd"):
 
     """
 
+    sklearn.utils.check_consistent_length(y_preds, y_true)
+    classes = sklearn.utils.multiclass.unique_labels(y_preds, y_true)
+
     # define the bin function
     def bin_func(y_probs_bin, y_preds_bin, y_true_bin):
-        confusion = sklearn.metrics.confusion_matrix(y_true_bin, y_preds_bin)
+        confusion = sklearn.metrics.confusion_matrix(y_true_bin, y_preds_bin, labels=classes)
         acc = ridgereliability.beta.balanced_accuracy_expected(confusion, fft=True)
         conf = y_probs_bin.mean()
         return abs(acc - conf)
 
     # compute the full result
-    bin_indices = utils.get_bin_indices(y_probs, bins=bins)
+    bin_indices = utils.get_bin_indices(y_probs, bins=bins, lower=0, upper=1)
     return utils.binning(y_probs, y_preds, y_true, bin_indices, bin_func)
 
 # Cell
