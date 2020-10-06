@@ -98,13 +98,21 @@ def find_random_task(selected_tasks):
                 return task
 
 
-# In[147]:
+# In[108]:
 
 
 if random_tasks > 0:
     TASKS = random_tasks
 else:
-    TASKS = [9983, 9952, 3899, 219, 3954, 14964, 32, 6, 3510, 40, 9950, 53, 3512, 12, 3962, 39, 3577, 145682, 3794, 146824]
+    TASKS = [4240, 4245, 1780,  248, 1896, 3891, 3934, 3611, 3837, 3763, 1784,
+       2938,   12,  242, 3918, 3497, 3524, 3614, 3523,  246, 1923, 3925,
+        277,   31, 3603, 3653, 3894,   52, 3058,  250, 4196, 3994,    3,
+       3584,  252, 4200, 3527, 1787, 3778, 3993, 3841, 3959, 3996, 3846,
+       4190, 3933,  275, 1927, 4234, 4238, 3997, 3520, 1892, 4241, 1811,
+        266, 3521, 1806, 3635, 1916, 3730, 3806, 3710, 3892, 3657, 3775,
+        270, 3491, 3716, 3753, 3676, 3788, 3538, 4235, 3585, 3731, 3702,
+       3917, 3821,   45, 3689, 3598,  233, 3995, 2104, 3519, 3735, 1903,
+       3777, 4243, 3828, 3733, 3056, 3583, 4225, 3695, 4198, 3617,  261]
 
 
 # In[148]:
@@ -161,13 +169,11 @@ def load_openml_task(task_id=None, selected_tasks=[]):
 
 
 MODELS = {
-    "rf": sklearn.ensemble.RandomForestClassifier(),
-    "svm": sklearn.svm.SVC(probability=True),
-    "logreg": sklearn.linear_model.LogisticRegression(max_iter=1000),
-    "nb": sklearn.naive_bayes.GaussianNB(),
-    "mlp": sklearn.neural_network.MLPClassifier(max_iter=1000),
-    "adaboost": sklearn.ensemble.AdaBoostClassifier(n_estimators=500),
-    "dectree": sklearn.tree.DecisionTreeClassifier()
+    "svm": sklearn.ensemble.BaggingClassifier(sklearn.svm.SVC(probability=True)),
+    "logreg": sklearn.ensemble.BaggingClassifier(sklearn.linear_model.LogisticRegression(max_iter=1000)),
+    "nb": sklearn.ensemble.BaggingClassifier(sklearn.naive_bayes.GaussianNB()),
+    "mlp": sklearn.ensemble.BaggingClassifier(sklearn.neural_network.MLPClassifier(max_iter=1000)),
+    "dectree": sklearn.ensemble.BaggingClassifier(sklearn.tree.DecisionTreeClassifier())
 }
 
 
@@ -297,13 +303,19 @@ if not is_notebook():
     exit()
 
 
-# In[62]:
+# In[106]:
 
 
 df = pandas.concat([
     load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601494658.dat"),
 #     load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601913635.dat")
 ])
+
+
+# In[107]:
+
+
+df["task_id"].unique()
 
 
 # In[63]:
