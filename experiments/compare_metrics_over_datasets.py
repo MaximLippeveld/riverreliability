@@ -169,11 +169,13 @@ def load_openml_task(task_id=None, selected_tasks=[]):
 
 
 MODELS = {
-    "svm": sklearn.ensemble.BaggingClassifier(sklearn.svm.SVC(probability=True)),
-    "logreg": sklearn.ensemble.BaggingClassifier(sklearn.linear_model.LogisticRegression(max_iter=1000)),
-    "nb": sklearn.ensemble.BaggingClassifier(sklearn.naive_bayes.GaussianNB()),
-    "mlp": sklearn.ensemble.BaggingClassifier(sklearn.neural_network.MLPClassifier(max_iter=1000)),
-    "dectree": sklearn.ensemble.BaggingClassifier(sklearn.tree.DecisionTreeClassifier())
+    "rf": sklearn.ensemble.RandomForestClassifier(),
+#     "svm": sklearn.svm.SVC(probability=True),
+    "logreg": sklearn.linear_model.LogisticRegression(max_iter=1000),
+    "nb": sklearn.naive_bayes.GaussianNB(),
+    "mlp": sklearn.neural_network.MLPClassifier(max_iter=1000),
+    "adaboost": sklearn.ensemble.AdaBoostClassifier(n_estimators=500),
+    "dectree": sklearn.tree.DecisionTreeClassifier()
 }
 
 
