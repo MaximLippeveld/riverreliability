@@ -8,6 +8,7 @@ import pandas
 import numpy
 import seaborn
 import matplotlib.pyplot as plt
+import tabulate
 
 import openml
 
@@ -43,7 +44,7 @@ def is_notebook():
         return False
 
 
-# In[22]:
+# In[3]:
 
 
 if is_notebook():
@@ -59,7 +60,7 @@ else:
     random_tasks = args.random_tasks
 
 
-# In[23]:
+# In[4]:
 
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(name)s %(asctime)s - %(message)s')
@@ -74,13 +75,13 @@ logging.getLogger("root").addFilter(NoRequestFilter())
 logging.getLogger().addFilter(NoRequestFilter())
 
 
-# In[24]:
+# In[5]:
 
 
 numpy.random.seed(42)
 
 
-# In[25]:
+# In[146]:
 
 
 def find_random_task(selected_tasks):
@@ -89,7 +90,7 @@ def find_random_task(selected_tasks):
         df = openml.tasks.list_tasks(task_type_id=1, offset=tries*1000, output_format="dataframe", size=1000, status="active", number_missing_values=0)
         tries += 1
         if "NumberOfInstances" in df:
-            df = df[(df["NumberOfInstances"] > 100) & (df["NumberOfInstances"] < 5000)]
+            df = df[(df["NumberOfInstances"] > 2000) & (df["NumberOfInstances"] < 10000)]
             df = df[~df["tid"].isin(list(selected_tasks))]
             if len(df) > 0:
                 task = df.sample(n=1).iloc[0]["tid"]
@@ -97,7 +98,7 @@ def find_random_task(selected_tasks):
                 return task
 
 
-# In[26]:
+# In[147]:
 
 
 if random_tasks > 0:
@@ -106,7 +107,7 @@ else:
     TASKS = [9983, 9952, 3899, 219, 3954, 14964, 32, 6, 3510, 40, 9950, 53, 3512, 12, 3962, 39, 3577, 145682, 3794, 146824]
 
 
-# In[27]:
+# In[148]:
 
 
 def load_openml_task(task_id=None, selected_tasks=[]):
@@ -296,25 +297,28 @@ if not is_notebook():
     exit()
 
 
-# In[12]:
+# In[7]:
 
 
-df = load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601367377.dat")
+df = pandas.concat([
+    load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601494658.dat"),
+    load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601913635.dat")
+])
 
 
-# In[34]:
+# In[60]:
 
 
-df = load("metrics_1601494055.dat")
+df["task_id"].unique().shape
 
 
-# In[23]:
+# In[8]:
 
 
 df.columns = ["model_id", "task_id", "Accuracy", "Balanced Accuracy", "F1", "ECE", "Balanced ECE", "PEACE", "cw-ECE", "cw-PEACE"]
 
 
-# In[25]:
+# In[9]:
 
 
 def get_longform(df, cols=None, subject_cols=None):
@@ -339,31 +343,31 @@ def get_longform(df, cols=None, subject_cols=None):
     return pandas.concat(dfs)
 
 
-# In[26]:
+# In[10]:
 
 
 long_df = get_longform(df, df.columns[2:], ["model_id", "task_id"])
 
 
-# In[27]:
+# In[11]:
 
 
 long_df.shape
 
 
-# In[28]:
+# In[12]:
 
 
 long_df.head()
 
 
-# In[29]:
+# In[13]:
 
 
 seaborn.set_theme("paper", "whitegrid", font_scale=1.5)
 
 
-# In[30]:
+# In[14]:
 
 
 fig, ax = plt.subplots(figsize=(10, 6))
@@ -388,19 +392,19 @@ plt.legend(handles[:3], labels[:3], bbox_to_anchor=(0., 1.02, 1., .102), loc='lo
 plt.savefig("performance.pdf", bbox_inches="tight")
 
 
-# In[31]:
+# In[15]:
 
 
 cols = ["ECE", "Balanced ECE", "PEACE"]
 
 
-# In[32]:
+# In[16]:
 
 
 seaborn.displot(data=long_df[long_df["metric"].isin(cols)], x="value", hue="metric", rug=True, kind="kde")
 
 
-# In[34]:
+# In[17]:
 
 
 g = seaborn.violinplot(data=long_df[long_df["metric"].isin(cols)], y="value", x="metric")
@@ -410,121 +414,207 @@ g.set_ylabel("Metric value")
 # plt.savefig("metrics.pdf")
 
 
-# In[35]:
-
-
-long_df["metric_ord"] = long_df["metric"].map(lambda a: numpy.unique(long_df["metric"]).tolist().index(a))
-
-
-# In[36]:
+# In[19]:
 
 
 (df["PEACE"] - df["ECE"]).mean()
 
 
-# In[21]:
+# In[20]:
 
 
 import scipy.stats
 import scikit_posthocs as sp
 
 
+# In[21]:
+
+
+df.head()
+
+
 # In[22]:
 
 
-data = grouped_df.loc[grouped_df["repeat"] == 0, cols].values
-scipy.stats.friedmanchisquare(data[0], data[1], data[2])
+def map_stars(p):
+    if p < 0.001:
+        return "*"*3
+    elif p < 0.01:
+        return "*"*2
+    elif p < 0.05:
+        return "*"
+    else:
+        return ""
 
 
 # In[23]:
 
 
-long_data = get_longform(grouped_df.loc[grouped_df["repeat"] == 0, cols])
-sp.posthoc_conover(long_data, val_col="value", group_col="metric", p_adjust="holm")
+grid = seaborn.FacetGrid(data=df, col="model_id", col_wrap=4)
+table_data = [["PEACE - ECE"], ["PEACE - Balanced ECE"], ["Balanced ECE - ECE"]]
+for ax, (idx, model_df) in zip(grid.axes, df.groupby("model_id")):    
+    
+    diff_df = pandas.concat([
+        pandas.DataFrame({"value": model_df["PEACE"] - model_df["ECE"], "diff": "PEACE - ECE"}),
+        pandas.DataFrame({"value": model_df["PEACE"] - model_df["Balanced ECE"], "diff": "PEACE - Balanced ECE"}),
+        pandas.DataFrame({"value": model_df["Balanced ECE"] - model_df["ECE"], "diff": "Balanced ECE - ECE"})
+    ])
+    
+    data = model_df.loc[:, cols + ["task_id"]]
+    test = scipy.stats.friedmanchisquare(data.iloc[:, 0], data.iloc[:, 1], data.iloc[:, 2])
+    if test.pvalue < 0.05:
+        a = sp.posthoc_conover_friedman(data.iloc[:, :3], p_adjust="bonferroni")
+        colors = [
+            "red" if a["PEACE"]["ECE"] < 0.05 else "grey",
+            "red" if a["PEACE"]["Balanced ECE"] < 0.05 else "grey",
+            "red" if a["Balanced ECE"]["ECE"] < 0.05 else "grey"
+        ]
+    else:
+        colors = ["grey"]*3
+
+    tmp_df = diff_df.groupby("diff").aggregate("mean")
+    for i, (col1, col2) in enumerate([["PEACE", "ECE"], ["PEACE", "Balanced ECE"], ["Balanced ECE", "ECE"]]):
+        table_data[i].append("$%+.3f$ %s" % (tmp_df.loc[f"{col1} - {col2}"], map_stars(a[col1][col2])))
+    
+    ax.set_title(idx)
+    seaborn.boxplot(data=diff_df, y="diff", x="value", orient="h", ax=ax, palette=seaborn.color_palette(colors))
+    ax.set_xlim(-0.05, 0.05)
+
+grid.set_axis_labels("Difference", "Comparison")
+plt.savefig("pairwise_comparisons.pdf", bbox_inches="tight")
 
 
 # In[24]:
 
 
-for idx, model_df in grouped_df.groupby("model_id"):
-    data = model_df.loc[:, cols]
-    test = scipy.stats.friedmanchisquare(data.iloc[:, 0], data.iloc[:, 1], data.iloc[:, 2])
-    print(idx)
-    print(test)
-    
-    if test.pvalue < 0.05:
-        long_data = get_longform(data)
-        print(sp.posthoc_conover(long_data, val_col="value", group_col="metric", p_adjust="holm"))
-    print("-"*20)
+headers = ["AdaBoost", "DecTree", "LogReg", "MLP", "GNB", "RF", "SVM"]
+print(tabulate.tabulate(table_data, headers=headers, tablefmt="latex").replace("\\$", "$"))
 
 
-# In[26]:
+# In[25]:
 
 
 seaborn.catplot(data=long_df[long_df["metric"].isin(cols)], x="metric", y="value", col="model_id", kind="violin")
 
 
-# In[91]:
+# In[26]:
 
 
 def get_task_meta(task_id):
     task = openml.tasks.get_task(task_id)
     d = task.get_dataset()
-    return dict(
-        task_id = task_id,
-        n_classes = d.qualities["NumberOfClasses"],
-        n_features = d.qualities["NumberOfFeatures"],
-        n_instances = d.qualities["NumberOfInstances"]
-    )
+    return {
+        "Task ID": task_id,
+        "# classes": d.qualities["NumberOfClasses"],
+        "# features":  d.qualities["NumberOfFeatures"],
+        "# instances": d.qualities["NumberOfInstances"],
+        "Dataset ID": d.dataset_id,
+        "Dataset name": d.name,
+        "Dataset URL": d.openml_url,
+        "Dataset version": d.version,
+        "Dataset creator": ", ".join(d.creator) if type(d.creator) is list else d.creator
+    }
 
 
-# In[92]:
+# In[29]:
 
 
 with multiprocessing.Pool(processes=multiprocessing.cpu_count()) as pool:
-    tasks = pool.map(get_task_meta, grouped_df["task_id"])
+    tasks = pool.map(get_task_meta, df["task_id"].unique())
 
 
-# In[93]:
+# In[30]:
 
 
-tasks_meta = pandas.DataFrame(tasks).set_index("task_id").join(grouped_df.set_index("task_id"))
+tasks = pandas.DataFrame(tasks)
+tasks.head()
 
 
-# In[94]:
+# In[59]:
 
 
-tasks_meta["PEACE-ECE"] = tasks_meta["PEACE"] - tasks_meta["ECE"]
+tasks["Task ID"]
 
 
-# In[95]:
+# In[119]:
 
 
-tasks_meta["PEACE>ECE"] = tasks_meta["PEACE"] > tasks_meta["ECE"]
+with open("task_table.tex", "w") as fp:
+    fp.write(tabulate.tabulate(
+        tasks[["Task ID", "Dataset ID", "Dataset name", "Dataset version", "# classes", "# features", "# instances"]].values, 
+        headers=["Task ID", "Dataset ID", "Dataset name", "Dataset version", "# classes", "# features", "# instances"],
+        tablefmt="latex"))
 
 
-# In[103]:
+# In[31]:
 
 
-tasks_meta["PEACE>=ECE"] = tasks_meta["PEACE"] >= tasks_meta["ECE"]
+table = tasks.merge(df, right_on="task_id", left_on="Task ID")
 
 
-# In[109]:
+# In[37]:
 
 
-seaborn.displot(data=tasks_meta, x="n_instances", col="PEACE>=ECE", kind="hist")
+tasks["# instances"].describe()
 
 
-# In[110]:
+# In[32]:
 
 
-seaborn.displot(data=tasks_meta, x="n_classes", col="PEACE>=ECE", kind="hist")
+table["PEACE-ECE"] = describe"PEACE"] - table["ECE"]
 
 
-# In[107]:
+# In[35]:
 
 
-seaborn.displot(data=tasks_meta, x="n_features", hue="PEACE>=ECE", kind="kde")
+table["PEACE-balECE"] = table["PEACE"] - table["Balanced ECE"]
+table["PEACE>=balECE"] = table["PEACE"] >= table["Balanced ECE"]
+
+
+# In[33]:
+
+
+selector = table["model_id"] == "mlp"
+
+
+# In[36]:
+
+
+fig, ax = plt.subplots(1, 3, figsize=(10, 4), constrained_layout=True)
+seaborn.regplot(data=table, x="# instances", y="PEACE-balECE", ax=ax[0])
+seaborn.regplot(data=table, x="# features", y="PEACE-balECE", ax=ax[1])
+seaborn.regplot(data=table, x="# classes", y="PEACE-balECE", ax=ax[2])
+
+
+# In[38]:
+
+
+import statsmodels.api as sm
+
+
+# In[57]:
+
+
+pandas.get_dummies(table["Task ID"])
+
+
+# In[52]:
+
+
+X = pandas.concat([pandas.get_dummies(table["model_id"]), table[["# instances", "# features", "# classes"]]], axis=1)
+
+
+# In[54]:
+
+
+model = sm.OLS(table["PEACE-balECE"], sm.add_constant(X))
+res = model.fit()
+
+
+# In[55]:
+
+
+res.summary()
 
 
 # In[21]:
