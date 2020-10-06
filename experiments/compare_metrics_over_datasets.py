@@ -297,28 +297,22 @@ if not is_notebook():
     exit()
 
 
-# In[7]:
+# In[62]:
 
 
 df = pandas.concat([
     load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601494658.dat"),
-    load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601913635.dat")
+#     load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601913635.dat")
 ])
 
 
-# In[60]:
-
-
-df["task_id"].unique().shape
-
-
-# In[8]:
+# In[63]:
 
 
 df.columns = ["model_id", "task_id", "Accuracy", "Balanced Accuracy", "F1", "ECE", "Balanced ECE", "PEACE", "cw-ECE", "cw-PEACE"]
 
 
-# In[9]:
+# In[64]:
 
 
 def get_longform(df, cols=None, subject_cols=None):
@@ -343,31 +337,31 @@ def get_longform(df, cols=None, subject_cols=None):
     return pandas.concat(dfs)
 
 
-# In[10]:
+# In[65]:
 
 
 long_df = get_longform(df, df.columns[2:], ["model_id", "task_id"])
 
 
-# In[11]:
+# In[66]:
 
 
 long_df.shape
 
 
-# In[12]:
+# In[67]:
 
 
 long_df.head()
 
 
-# In[13]:
+# In[68]:
 
 
 seaborn.set_theme("paper", "whitegrid", font_scale=1.5)
 
 
-# In[14]:
+# In[69]:
 
 
 fig, ax = plt.subplots(figsize=(10, 6))
@@ -392,19 +386,19 @@ plt.legend(handles[:3], labels[:3], bbox_to_anchor=(0., 1.02, 1., .102), loc='lo
 plt.savefig("performance.pdf", bbox_inches="tight")
 
 
-# In[15]:
+# In[70]:
 
 
 cols = ["ECE", "Balanced ECE", "PEACE"]
 
 
-# In[16]:
+# In[71]:
 
 
 seaborn.displot(data=long_df[long_df["metric"].isin(cols)], x="value", hue="metric", rug=True, kind="kde")
 
 
-# In[17]:
+# In[72]:
 
 
 g = seaborn.violinplot(data=long_df[long_df["metric"].isin(cols)], y="value", x="metric")
@@ -414,26 +408,26 @@ g.set_ylabel("Metric value")
 # plt.savefig("metrics.pdf")
 
 
-# In[19]:
+# In[73]:
 
 
 (df["PEACE"] - df["ECE"]).mean()
 
 
-# In[20]:
+# In[74]:
 
 
 import scipy.stats
 import scikit_posthocs as sp
 
 
-# In[21]:
+# In[75]:
 
 
 df.head()
 
 
-# In[22]:
+# In[76]:
 
 
 def map_stars(p):
@@ -447,7 +441,7 @@ def map_stars(p):
         return ""
 
 
-# In[23]:
+# In[77]:
 
 
 grid = seaborn.FacetGrid(data=df, col="model_id", col_wrap=4)
@@ -484,20 +478,20 @@ grid.set_axis_labels("Difference", "Comparison")
 plt.savefig("pairwise_comparisons.pdf", bbox_inches="tight")
 
 
-# In[24]:
+# In[78]:
 
 
 headers = ["AdaBoost", "DecTree", "LogReg", "MLP", "GNB", "RF", "SVM"]
 print(tabulate.tabulate(table_data, headers=headers, tablefmt="latex").replace("\\$", "$"))
 
 
-# In[25]:
+# In[102]:
 
 
 seaborn.catplot(data=long_df[long_df["metric"].isin(cols)], x="metric", y="value", col="model_id", kind="violin")
 
 
-# In[26]:
+# In[80]:
 
 
 def get_task_meta(task_id):
@@ -516,24 +510,18 @@ def get_task_meta(task_id):
     }
 
 
-# In[29]:
+# In[81]:
 
 
 with multiprocessing.Pool(processes=multiprocessing.cpu_count()) as pool:
     tasks = pool.map(get_task_meta, df["task_id"].unique())
 
 
-# In[30]:
+# In[82]:
 
 
 tasks = pandas.DataFrame(tasks)
 tasks.head()
-
-
-# In[59]:
-
-
-tasks["Task ID"]
 
 
 # In[119]:
@@ -546,38 +534,38 @@ with open("task_table.tex", "w") as fp:
         tablefmt="latex"))
 
 
-# In[31]:
+# In[83]:
 
 
 table = tasks.merge(df, right_on="task_id", left_on="Task ID")
 
 
-# In[37]:
+# In[84]:
 
 
 tasks["# instances"].describe()
 
 
-# In[32]:
+# In[86]:
 
 
-table["PEACE-ECE"] = describe"PEACE"] - table["ECE"]
+table["PEACE-ECE"] = table["PEACE"] - table["ECE"]
 
 
-# In[35]:
+# In[87]:
 
 
 table["PEACE-balECE"] = table["PEACE"] - table["Balanced ECE"]
 table["PEACE>=balECE"] = table["PEACE"] >= table["Balanced ECE"]
 
 
-# In[33]:
+# In[88]:
 
 
 selector = table["model_id"] == "mlp"
 
 
-# In[36]:
+# In[89]:
 
 
 fig, ax = plt.subplots(1, 3, figsize=(10, 4), constrained_layout=True)
@@ -586,32 +574,26 @@ seaborn.regplot(data=table, x="# features", y="PEACE-balECE", ax=ax[1])
 seaborn.regplot(data=table, x="# classes", y="PEACE-balECE", ax=ax[2])
 
 
-# In[38]:
+# In[90]:
 
 
 import statsmodels.api as sm
 
 
-# In[57]:
+# In[95]:
 
 
-pandas.get_dummies(table["Task ID"])
+X = pandas.concat([pandas.get_dummies(table["Task ID"]), pandas.get_dummies(table["model_id"]), table[["# instances", "# features", "# classes"]]], axis=1)
 
 
-# In[52]:
+# In[103]:
 
 
-X = pandas.concat([pandas.get_dummies(table["model_id"]), table[["# instances", "# features", "# classes"]]], axis=1)
-
-
-# In[54]:
-
-
-model = sm.OLS(table["PEACE-balECE"], sm.add_constant(X))
+model = sm.RLM(table["PEACE-balECE"], sm.add_constant(X))
 res = model.fit()
 
 
-# In[55]:
+# In[104]:
 
 
 res.summary()
