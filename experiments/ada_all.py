@@ -196,12 +196,11 @@ def load_openml_task(task_id=None, selected_tasks=[]):
                 raise e
 
 
-# In[97]:
+# In[176]:
 
 
 MODELS = {
-#     "svm": sklearn.linear_model.SGDClassifier(loss="log"),
-    "xgb": xgboost.XGBClassifier(tree_method="gpu_hist")
+    "adaboost": sklearn.ensemble.AdaBoostClassifier(base_estimator=sklearn.neural_network.MLPClassifier(max_iter=1000), n_estimators=500)
 }
 
 
