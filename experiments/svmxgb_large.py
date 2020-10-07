@@ -131,13 +131,13 @@ SMALL_TASKS = [4240, 4245, 1780,  248, 1896, 3891, 3934, 3611, 3837, 3763, 1784,
        3777, 4243, 3828, 3733, 3056, 3583, 4225, 3695, 4198, 3617,  261]
 
 
-# In[84]:
+# In[86]:
 
 
 if random_tasks > 0:
     TASKS = random_tasks
 else:
-    TASKS = SMALL_TASKS
+    TASKS = LARGE_TASKS
 
 
 # In[22]:
