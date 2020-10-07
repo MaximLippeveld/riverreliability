@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[52]:
 
 
 import pandas
@@ -23,6 +23,7 @@ import sklearn.linear_model
 import sklearn.naive_bayes
 import sklearn.neural_network
 import sklearn.tree
+import xgboost
 
 from ridgereliability import plots, metrics
 
@@ -33,7 +34,7 @@ import time
 from joblib import load, dump
 
 
-# In[2]:
+# In[3]:
 
 
 def is_notebook():
@@ -44,7 +45,7 @@ def is_notebook():
         return False
 
 
-# In[3]:
+# In[4]:
 
 
 if is_notebook():
@@ -60,7 +61,7 @@ else:
     random_tasks = args.random_tasks
 
 
-# In[4]:
+# In[5]:
 
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(name)s %(asctime)s - %(message)s')
@@ -75,7 +76,7 @@ logging.getLogger("root").addFilter(NoRequestFilter())
 logging.getLogger().addFilter(NoRequestFilter())
 
 
-# In[5]:
+# In[6]:
 
 
 numpy.random.seed(42)
@@ -98,13 +99,28 @@ def find_random_task(selected_tasks):
                 return task
 
 
-# In[108]:
+# In[130]:
 
 
-if random_tasks > 0:
-    TASKS = random_tasks
-else:
-    TASKS = [4240, 4245, 1780,  248, 1896, 3891, 3934, 3611, 3837, 3763, 1784,
+LARGE_TASKS = [  3919,   4230,   3601,     30,   3891,   4190,   1792,     43,
+         1908,   3786,   2939,   3488,   3843,   3603,    266,   4193,
+         3528,   3842,   3525,   3777,   1923,   1809,    275,   3638,
+         3684,   1800,   1916,   1794,   2074,     36,   3672,   2120,
+          288,   3594,   3712,   3618,   3586,   4229,   3917,   1925,
+         3816,   1767,   3668,   1883,   3698,   3907,   4233,   3485,
+         3531,   3627,   1822,   3524,   3821,   3681,   3892,   3950,
+          233,    260,   3894,   4236,   3884,   3735,   4215,   2121,
+          258,   3481,   3839,   3510,     58,   1910,   3591,     28,
+          273,     45,      3,   1938,   1807,   4186, 126022,  14969,
+       145945,  75100,   4308, 145855,   9898,   4612,  75203,  75216,
+       145891, 145985,   9952,   9921,  75169, 145903,  75242,  75124,
+        75138,  10091]
+
+
+# In[131]:
+
+
+SMALL_TASKS = [4240, 4245, 1780,  248, 1896, 3891, 3934, 3611, 3837, 3763, 1784,
        2938,   12,  242, 3918, 3497, 3524, 3614, 3523,  246, 1923, 3925,
         277,   31, 3603, 3653, 3894,   52, 3058,  250, 4196, 3994,    3,
        3584,  252, 4200, 3527, 1787, 3778, 3993, 3841, 3959, 3996, 3846,
@@ -113,6 +129,15 @@ else:
         270, 3491, 3716, 3753, 3676, 3788, 3538, 4235, 3585, 3731, 3702,
        3917, 3821,   45, 3689, 3598,  233, 3995, 2104, 3519, 3735, 1903,
        3777, 4243, 3828, 3733, 3056, 3583, 4225, 3695, 4198, 3617,  261]
+
+
+# In[133]:
+
+
+if random_tasks > 0:
+    TASKS = random_tasks
+else:
+    TASKS = LARGE_TASKS
 
 
 # In[148]:
@@ -169,13 +194,9 @@ def load_openml_task(task_id=None, selected_tasks=[]):
 
 
 MODELS = {
-    "rf": sklearn.ensemble.RandomForestClassifier(),
-#     "svm": sklearn.svm.SVC(probability=True),
-    "logreg": sklearn.linear_model.LogisticRegression(max_iter=1000),
-    "nb": sklearn.naive_bayes.GaussianNB(),
-    "mlp": sklearn.neural_network.MLPClassifier(max_iter=1000),
     "adaboost": sklearn.ensemble.AdaBoostClassifier(n_estimators=500),
-    "dectree": sklearn.tree.DecisionTreeClassifier()
+    "dectree": sklearn.tree.DecisionTreeClassifier(),
+    "svm": sklearn.svm.LinearSVC()
 }
 
 
@@ -305,28 +326,29 @@ if not is_notebook():
     exit()
 
 
-# In[106]:
+# In[74]:
+
+
+tmp_df = load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601995877.dat")
+tmp_df["model_id"] = "bagged_" + tmp_df["model_id"]
+
+
+# In[128]:
 
 
 df = pandas.concat([
-    load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601494658.dat"),
-#     load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601913635.dat")
+#     load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601494658.dat"),
+    load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1602009416.dat"),
 ])
 
 
-# In[107]:
-
-
-df["task_id"].unique()
-
-
-# In[63]:
+# In[119]:
 
 
 df.columns = ["model_id", "task_id", "Accuracy", "Balanced Accuracy", "F1", "ECE", "Balanced ECE", "PEACE", "cw-ECE", "cw-PEACE"]
 
 
-# In[64]:
+# In[90]:
 
 
 def get_longform(df, cols=None, subject_cols=None):
@@ -351,31 +373,31 @@ def get_longform(df, cols=None, subject_cols=None):
     return pandas.concat(dfs)
 
 
-# In[65]:
+# In[91]:
 
 
 long_df = get_longform(df, df.columns[2:], ["model_id", "task_id"])
 
 
-# In[66]:
+# In[92]:
 
 
 long_df.shape
 
 
-# In[67]:
+# In[93]:
 
 
 long_df.head()
 
 
-# In[68]:
+# In[94]:
 
 
 seaborn.set_theme("paper", "whitegrid", font_scale=1.5)
 
 
-# In[69]:
+# In[95]:
 
 
 fig, ax = plt.subplots(figsize=(10, 6))
@@ -392,7 +414,7 @@ ax.set_xlabel("Model")
 ax.set_ylabel("Metric value")
 ax.set_ylim(0, 1)
 ax.set_xticklabels(
-    ["AdaBoost", "Decision Tree", "Logistic Regression", "Multi-layer Perceptron", "Gaussian Naive Bayes", "Random Forest", "SVM"],
+#     ["AdaBoost", "Decision Tree", "Logistic Regression", "Multi-layer Perceptron", "Gaussian Naive Bayes", "Random Forest", "SVM"],
     rotation=-30, ha="left")
 
 plt.legend(handles[:3], labels[:3], bbox_to_anchor=(0., 1.02, 1., .102), loc='lower right',
@@ -400,19 +422,19 @@ plt.legend(handles[:3], labels[:3], bbox_to_anchor=(0., 1.02, 1., .102), loc='lo
 plt.savefig("performance.pdf", bbox_inches="tight")
 
 
-# In[70]:
+# In[96]:
 
 
 cols = ["ECE", "Balanced ECE", "PEACE"]
 
 
-# In[71]:
+# In[97]:
 
 
 seaborn.displot(data=long_df[long_df["metric"].isin(cols)], x="value", hue="metric", rug=True, kind="kde")
 
 
-# In[72]:
+# In[98]:
 
 
 g = seaborn.violinplot(data=long_df[long_df["metric"].isin(cols)], y="value", x="metric")
@@ -422,26 +444,26 @@ g.set_ylabel("Metric value")
 # plt.savefig("metrics.pdf")
 
 
-# In[73]:
+# In[99]:
 
 
 (df["PEACE"] - df["ECE"]).mean()
 
 
-# In[74]:
+# In[100]:
 
 
 import scipy.stats
 import scikit_posthocs as sp
 
 
-# In[75]:
+# In[101]:
 
 
 df.head()
 
 
-# In[76]:
+# In[102]:
 
 
 def map_stars(p):
@@ -455,7 +477,7 @@ def map_stars(p):
         return ""
 
 
-# In[77]:
+# In[120]:
 
 
 grid = seaborn.FacetGrid(data=df, col="model_id", col_wrap=4)
@@ -492,20 +514,57 @@ grid.set_axis_labels("Difference", "Comparison")
 plt.savefig("pairwise_comparisons.pdf", bbox_inches="tight")
 
 
-# In[78]:
+# In[125]:
+
+
+grid = seaborn.FacetGrid(data=df1, col="model_id", col_wrap=4)
+table_data = [["PEACE - ECE"], ["PEACE - Balanced ECE"], ["Balanced ECE - ECE"]]
+for ax, (idx, model_df) in zip(grid.axes, df1.groupby("model_id")):    
+    
+    diff_df = pandas.concat([
+        pandas.DataFrame({"value": model_df["PEACE"] - model_df["ECE"], "diff": "PEACE - ECE"}),
+        pandas.DataFrame({"value": model_df["PEACE"] - model_df["Balanced ECE"], "diff": "PEACE - Balanced ECE"}),
+        pandas.DataFrame({"value": model_df["Balanced ECE"] - model_df["ECE"], "diff": "Balanced ECE - ECE"})
+    ])
+    
+    data = model_df.loc[:, cols + ["task_id"]]
+    test = scipy.stats.friedmanchisquare(data.iloc[:, 0], data.iloc[:, 1], data.iloc[:, 2])
+    if test.pvalue < 0.05:
+        a = sp.posthoc_conover_friedman(data.iloc[:, :3], p_adjust="bonferroni")
+        colors = [
+            "red" if a["PEACE"]["ECE"] < 0.05 else "grey",
+            "red" if a["PEACE"]["Balanced ECE"] < 0.05 else "grey",
+            "red" if a["Balanced ECE"]["ECE"] < 0.05 else "grey"
+        ]
+    else:
+        colors = ["grey"]*3
+
+    tmp_df = diff_df.groupby("diff").aggregate("mean")
+    for i, (col1, col2) in enumerate([["PEACE", "ECE"], ["PEACE", "Balanced ECE"], ["Balanced ECE", "ECE"]]):
+        table_data[i].append("$%+.3f$ %s" % (tmp_df.loc[f"{col1} - {col2}"], map_stars(a[col1][col2])))
+    
+    ax.set_title(idx)
+    seaborn.boxplot(data=diff_df, y="diff", x="value", orient="h", ax=ax, palette=seaborn.color_palette(colors))
+    ax.set_xlim(-0.05, 0.05)
+
+grid.set_axis_labels("Difference", "Comparison")
+plt.savefig("pairwise_comparisons.pdf", bbox_inches="tight")
+
+
+# In[25]:
 
 
 headers = ["AdaBoost", "DecTree", "LogReg", "MLP", "GNB", "RF", "SVM"]
 print(tabulate.tabulate(table_data, headers=headers, tablefmt="latex").replace("\\$", "$"))
 
 
-# In[102]:
+# In[26]:
 
 
 seaborn.catplot(data=long_df[long_df["metric"].isin(cols)], x="metric", y="value", col="model_id", kind="violin")
 
 
-# In[80]:
+# In[104]:
 
 
 def get_task_meta(task_id):
@@ -524,21 +583,21 @@ def get_task_meta(task_id):
     }
 
 
-# In[81]:
+# In[105]:
 
 
 with multiprocessing.Pool(processes=multiprocessing.cpu_count()) as pool:
     tasks = pool.map(get_task_meta, df["task_id"].unique())
 
 
-# In[82]:
+# In[106]:
 
 
 tasks = pandas.DataFrame(tasks)
 tasks.head()
 
 
-# In[119]:
+# In[107]:
 
 
 with open("task_table.tex", "w") as fp:
@@ -548,38 +607,38 @@ with open("task_table.tex", "w") as fp:
         tablefmt="latex"))
 
 
-# In[83]:
+# In[108]:
 
 
 table = tasks.merge(df, right_on="task_id", left_on="Task ID")
 
 
-# In[84]:
+# In[109]:
 
 
 tasks["# instances"].describe()
 
 
-# In[86]:
+# In[110]:
 
 
 table["PEACE-ECE"] = table["PEACE"] - table["ECE"]
 
 
-# In[87]:
+# In[111]:
 
 
 table["PEACE-balECE"] = table["PEACE"] - table["Balanced ECE"]
 table["PEACE>=balECE"] = table["PEACE"] >= table["Balanced ECE"]
 
 
-# In[88]:
+# In[112]:
 
 
 selector = table["model_id"] == "mlp"
 
 
-# In[89]:
+# In[113]:
 
 
 fig, ax = plt.subplots(1, 3, figsize=(10, 4), constrained_layout=True)
@@ -588,26 +647,26 @@ seaborn.regplot(data=table, x="# features", y="PEACE-balECE", ax=ax[1])
 seaborn.regplot(data=table, x="# classes", y="PEACE-balECE", ax=ax[2])
 
 
-# In[90]:
+# In[114]:
 
 
 import statsmodels.api as sm
 
 
-# In[95]:
+# In[115]:
 
 
 X = pandas.concat([pandas.get_dummies(table["Task ID"]), pandas.get_dummies(table["model_id"]), table[["# instances", "# features", "# classes"]]], axis=1)
 
 
-# In[103]:
+# In[116]:
 
 
 model = sm.RLM(table["PEACE-balECE"], sm.add_constant(X))
 res = model.fit()
 
 
-# In[104]:
+# In[117]:
 
 
 res.summary()
