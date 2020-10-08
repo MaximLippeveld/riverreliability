@@ -267,6 +267,7 @@ def bar_diagram(edges:np.array, bin_accuracies:np.array, bin_confidences:np.arra
 
     ax.plot([0,1], [0,1], linestyle="--", color=cmap(1), alpha=0.9, linewidth=1)
 
+    width = (edges - np.roll(edges, 1))[1:]
     for i, (xi, yi, bi) in enumerate(zip(edges, bin_accuracies, bin_confidences)):
         if np.isnan(bi):
             continue
@@ -278,11 +279,11 @@ def bar_diagram(edges:np.array, bin_accuracies:np.array, bin_confidences:np.arra
             sem = 0.
 
         # plot bin value
-        ax.bar(xi, yi, width=edges[1], align="edge", color=cmap(1-bi), edgecolor="grey", yerr=sem, linewidth=1, zorder=0)
+        ax.bar(xi, yi, width=width[i], align="edge", color=cmap(1-bi), edgecolor="grey", yerr=sem, linewidth=1, zorder=0)
 
         # plot gap to ideal value
         ax.bar(
-            xi+edges[1]/2, np.abs(bi-yi), bottom=min(bi, yi), width=edges[1],
+            xi+width[i]/2, np.abs(bi-yi), bottom=min(bi, yi), width=width[i],
             align="center", color=cmap(0), edgecolor="grey", linewidth=1, zorder=1
         )
 

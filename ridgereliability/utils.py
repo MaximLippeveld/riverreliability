@@ -12,8 +12,7 @@ import logging
 
 # Cell
 
-
-def get_bin_indices(y_probs:np.array, bins='fd', lower:float=None, upper:float=None, return_edges:bool=False):
+def get_bin_indices(y_probs:np.array, bins='fd', lower:float=None, upper:float=None, return_edges:bool=False, n_bins:int=10):
     """Compute a function across.
 
     Parameters:
@@ -40,7 +39,18 @@ def get_bin_indices(y_probs:np.array, bins='fd', lower:float=None, upper:float=N
     if upper is None:
         upper = y_probs.max()
 
-    edges = np.histogram_bin_edges(y_probs, bins=bins, range=(lower, upper))
+    if bins == "count":
+
+        assert n_bins <= len(y_probs), "Too little observations."
+
+        obs_per_bin = len(y_probs) // n_bins
+
+        edges = np.empty((n_bins+1), dtype=float)
+        edges[0] = 0.0
+        edges[-1] = 1.0
+        edges[1:n_bins] = np.sort(y_probs)[np.arange(1, n_bins)*obs_per_bin]
+    else:
+        edges = np.histogram_bin_edges(y_probs, bins=bins, range=(lower, upper))
 
     if not isinstance(bins, int):
         bins = len(edges) - 1
