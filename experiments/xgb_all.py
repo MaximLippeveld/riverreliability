@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[38]:
+# In[152]:
 
 
 import pandas
@@ -34,7 +34,7 @@ import time
 from joblib import load, dump
 
 
-# In[39]:
+# In[153]:
 
 
 def is_notebook():
@@ -45,7 +45,7 @@ def is_notebook():
         return False
 
 
-# In[88]:
+# In[154]:
 
 
 if is_notebook():
@@ -61,7 +61,7 @@ else:
     random_tasks = args.random_tasks
 
 
-# In[89]:
+# In[155]:
 
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(name)s %(asctime)s - %(message)s')
@@ -76,7 +76,7 @@ logging.getLogger("root").addFilter(NoRequestFilter())
 logging.getLogger().addFilter(NoRequestFilter())
 
 
-# In[90]:
+# In[156]:
 
 
 numpy.random.seed(42)
@@ -196,11 +196,10 @@ def load_openml_task(task_id=None, selected_tasks=[]):
                 raise e
 
 
-# In[97]:
+# In[178]:
 
 
 MODELS = {
-#     "svm": sklearn.linear_model.SGDClassifier(loss="log"),
     "xgb": xgboost.XGBClassifier(tree_method="gpu_hist")
 }
 
@@ -223,7 +222,7 @@ def fit_and_predict(model_id, Xt, yt, Xv, yv):
 # In[99]:
 
 
-def get_cv_metrics_for_model_and_task(model_id, task_id, pool, counter, start_at, selected_tasks):
+def get_cv_metrics_for_model_and_task(model_id, task_id, pool, selected_tasks):
     X, y, splitter, task_id = load_openml_task(task_id, selected_tasks=selected_tasks) # repeated runs will use cached data
     
     row = {
@@ -233,9 +232,6 @@ def get_cv_metrics_for_model_and_task(model_id, task_id, pool, counter, start_at
 
     promises = []
     for i, (train_idx, test_idx) in enumerate(splitter.split()):
-        counter += 1
-        if counter < start_at:
-            continue
 
         # split data
         Xt, yt = X[train_idx], y[train_idx]
@@ -248,20 +244,18 @@ def get_cv_metrics_for_model_and_task(model_id, task_id, pool, counter, start_at
         promises.append(promise)
 
     logging.info(f"Promises for single cv: {len(promises)}")
-    return row, promises, counter
+    return row, promises
 
 
-# In[100]:
+# In[5]:
 
 
 with multiprocessing.Pool(processes=n_procs) as pool:
 
-    start_at = 0
+    start_at = 162
 
     output_file = f"metrics_{int(time.time())}.dat"
     logging.info(f"Output to {output_file}")
-
-    counter = 0
     
     if type(TASKS) is int:
         iter_tasks = []
@@ -270,7 +264,7 @@ with multiprocessing.Pool(processes=n_procs) as pool:
             _, _, _, task = load_openml_task(selected_tasks=tmp_tasks)
             iter_tasks.append(task)
     else:
-        iter_tasks = TASKS
+        iter_tasks = TASKS[start_at:]
         
     logging.info(f"Tasks: {iter_tasks}")
     
@@ -281,7 +275,7 @@ with multiprocessing.Pool(processes=n_procs) as pool:
         
         promises = []
         for task_id in iter_tasks:
-            row, tmp, counter = get_cv_metrics_for_model_and_task(model_id, task_id, pool, counter, start_at, [])
+            row, tmp = get_cv_metrics_for_model_and_task(model_id, task_id, pool, [])
             promises.append((row, tmp))
             logging.info(f"{len(promises)} tasks submitted to pool ({model_id})")
         logging.info(f"All {len(promises)} tasks submitted to pool ({model_id})")
@@ -331,30 +325,31 @@ if not is_notebook():
     exit()
 
 
-# In[ ]:
+# In[157]:
 
 
 tmp_df = load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601995877.dat")
 tmp_df["model_id"] = "bagged_" + tmp_df["model_id"]
 
 
-# In[101]:
+# In[158]:
 
 
 df = pandas.concat([
     load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601494658.dat"),
     load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1602009416.dat"),
-    load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1602065288.dat")
+    load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1602065288.dat"),
+    load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1602080372.dat"),
 ])
 
 
-# In[102]:
+# In[159]:
 
 
 df.columns = ["model_id", "task_id", "Accuracy", "Balanced Accuracy", "F1", "ECE", "Balanced ECE", "PEACE", "cw-ECE", "cw-PEACE"]
 
 
-# In[103]:
+# In[160]:
 
 
 def get_longform(df, cols=None, subject_cols=None):
@@ -379,31 +374,31 @@ def get_longform(df, cols=None, subject_cols=None):
     return pandas.concat(dfs)
 
 
-# In[104]:
+# In[161]:
 
 
 long_df = get_longform(df, df.columns[2:], ["model_id", "task_id"])
 
 
-# In[105]:
+# In[162]:
 
 
 long_df.shape
 
 
-# In[106]:
+# In[163]:
 
 
 long_df.head()
 
 
-# In[107]:
+# In[164]:
 
 
 seaborn.set_theme("paper", "whitegrid", font_scale=1.5)
 
 
-# In[111]:
+# In[167]:
 
 
 fig, ax = plt.subplots(figsize=(10, 6))
@@ -420,7 +415,7 @@ ax.set_xlabel("Model")
 ax.set_ylabel("Metric value")
 ax.set_ylim(0, 1)
 ax.set_xticklabels(
-    ["AdaBoost", "Decision Tree", "Logistic Regression", "Multi-layer Perceptron", "Gaussian Naive Bayes", "Random Forest", "SVM"],
+    ["AdaBoost", "Decision Tree", "Logistic Regression", "Multi-layer Perceptron", "Gaussian Naive Bayes", "Random Forest", "SVM", "XGBoost"],
     rotation=-30, ha="left")
 
 plt.legend(handles[:3], labels[:3], bbox_to_anchor=(0., 1.02, 1., .102), loc='lower right',
@@ -428,19 +423,19 @@ plt.legend(handles[:3], labels[:3], bbox_to_anchor=(0., 1.02, 1., .102), loc='lo
 plt.savefig("performance.pdf", bbox_inches="tight")
 
 
-# In[112]:
+# In[168]:
 
 
 cols = ["ECE", "Balanced ECE", "PEACE"]
 
 
-# In[113]:
+# In[169]:
 
 
 seaborn.displot(data=long_df[long_df["metric"].isin(cols)], x="value", hue="metric", rug=True, kind="kde")
 
 
-# In[114]:
+# In[170]:
 
 
 g = seaborn.violinplot(data=long_df[long_df["metric"].isin(cols)], y="value", x="metric")
@@ -450,26 +445,26 @@ g.set_ylabel("Metric value")
 # plt.savefig("metrics.pdf")
 
 
-# In[115]:
+# In[171]:
 
 
 (df["PEACE"] - df["ECE"]).mean()
 
 
-# In[116]:
+# In[172]:
 
 
 import scipy.stats
 import scikit_posthocs as sp
 
 
-# In[117]:
+# In[173]:
 
 
 df.head()
 
 
-# In[118]:
+# In[174]:
 
 
 def map_stars(p):
@@ -483,7 +478,7 @@ def map_stars(p):
         return ""
 
 
-# In[119]:
+# In[175]:
 
 
 grid = seaborn.FacetGrid(data=df, col="model_id", col_wrap=4)
@@ -499,7 +494,11 @@ for ax, (idx, model_df) in zip(grid.axes, df.groupby("model_id")):
     data = model_df.loc[:, cols + ["task_id"]]
     test = scipy.stats.friedmanchisquare(data.iloc[:, 0], data.iloc[:, 1], data.iloc[:, 2])
     if test.pvalue < 0.05:
-        a = sp.posthoc_conover_friedman(data.iloc[:, :3], p_adjust="bonferroni")
+        
+#         a = sp.posthoc_conover_friedman(data.iloc[:, :3], p_adjust="bonferroni")
+        l = get_longform(data.drop(columns=["task_id"]))
+        a = sp.posthoc_wilcoxon(a=l, val_col="value", group_col="metric", p_adjust="holm")
+        
         colors = [
             "red" if a["PEACE"]["ECE"] < 0.05 else "grey",
             "red" if a["PEACE"]["Balanced ECE"] < 0.05 else "grey",
