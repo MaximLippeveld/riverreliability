@@ -196,11 +196,11 @@ def load_openml_task(task_id=None, selected_tasks=[]):
                 raise e
 
 
-# In[176]:
+# In[178]:
 
 
 MODELS = {
-    "adaboost": sklearn.ensemble.AdaBoostClassifier(base_estimator=sklearn.neural_network.MLPClassifier(max_iter=1000), n_estimators=500)
+    "adaboost_nb": sklearn.ensemble.AdaBoostClassifier(base_estimator=sklearn.naive_bayes.GaussianNB(), n_estimators=500)
 }
 
 
