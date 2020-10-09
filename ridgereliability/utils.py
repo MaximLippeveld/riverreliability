@@ -12,7 +12,7 @@ import logging
 
 # Cell
 
-def get_bin_indices(y_probs:np.array, bins='fd', lower:float=None, upper:float=None, return_edges:bool=False, n_bins:int=10):
+def get_bin_indices(y_probs:np.array, bins='fd', lower:float=None, upper:float=None, return_edges:bool=False, n_bins:int=15):
     """Compute a function across.
 
     Parameters:
