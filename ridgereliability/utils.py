@@ -41,7 +41,8 @@ def get_bin_indices(y_probs:np.array, bins='fd', lower:float=None, upper:float=N
 
     if bins == "count":
 
-        assert n_bins <= len(y_probs), "Too little observations."
+        if n_bins > len(y_probs):
+            n_bins = len(y_probs)
 
         obs_per_bin = len(y_probs) // n_bins
 

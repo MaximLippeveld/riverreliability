@@ -20,7 +20,7 @@ import sklearn.utils
 
 # Cell
 
-def peace(y_probs, y_preds, y_true, samples=1000, bins="fd"):
+def peace(y_probs, y_preds, y_true, samples=1000, bins="fd", **bin_args):
     """Compute the posterior expected balanced accuracy-based calibration error (PEACE).
 
     Parameters:
@@ -56,12 +56,12 @@ def peace(y_probs, y_preds, y_true, samples=1000, bins="fd"):
         return scipy.integrate.simps(ys, xs)
 
     # compute the full result
-    bin_indices = utils.get_bin_indices(y_probs, bins=bins, lower=0, upper=1)
+    bin_indices = utils.get_bin_indices(y_probs, bins=bins, lower=0, upper=1, **bin_args)
     return utils.binning(y_probs, y_preds, y_true, bin_indices, bin_func)
 
 # Cell
 
-def ece(y_probs, y_preds, y_true, balanced=False, bins="fd"):
+def ece(y_probs, y_preds, y_true, balanced=False, bins="fd", **bin_args):
     """Compute the expected calibration error (ECE).
 
     Parameters:
@@ -89,13 +89,13 @@ def ece(y_probs, y_preds, y_true, balanced=False, bins="fd"):
         return abs(balacc - conf)
 
     # compute the full result
-    bin_indices = utils.get_bin_indices(y_probs, bins=bins, lower=0, upper=1)
+    bin_indices = utils.get_bin_indices(y_probs, bins=bins, lower=0, upper=1, **bin_args)
     func = balanced_bin_func if balanced else bin_func
     return utils.binning(y_probs, y_preds, y_true, bin_indices, func)
 
 # Cell
 
-def ece_v2(y_probs, y_preds, y_true, bins="fd"):
+def ece_v2(y_probs, y_preds, y_true, bins="fd", **bin_args):
     """Compute the expected calibration error based on the expected posterior balanced accuracy (ECEv2).
 
     Parameters:
@@ -119,7 +119,7 @@ def ece_v2(y_probs, y_preds, y_true, bins="fd"):
         return abs(acc - conf)
 
     # compute the full result
-    bin_indices = utils.get_bin_indices(y_probs, bins=bins, lower=0, upper=1)
+    bin_indices = utils.get_bin_indices(y_probs, bins=bins, lower=0, upper=1, **bin_args)
     return utils.binning(y_probs, y_preds, y_true, bin_indices, bin_func)
 
 # Cell

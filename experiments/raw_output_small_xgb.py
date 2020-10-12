@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[152]:
+# In[1]:
 
 
 import pandas
@@ -9,6 +9,7 @@ import numpy
 import seaborn
 import matplotlib.pyplot as plt
 import tabulate
+from tqdm.notebook import tqdm
 
 import openml
 
@@ -32,9 +33,10 @@ import multiprocessing
 import logging
 import time
 from joblib import load, dump
+from functools import partial
 
 
-# In[153]:
+# In[2]:
 
 
 def is_notebook():
@@ -45,7 +47,7 @@ def is_notebook():
         return False
 
 
-# In[154]:
+# In[3]:
 
 
 if is_notebook():
@@ -61,7 +63,7 @@ else:
     random_tasks = args.random_tasks
 
 
-# In[155]:
+# In[4]:
 
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(name)s %(asctime)s - %(message)s')
@@ -76,13 +78,13 @@ logging.getLogger("root").addFilter(NoRequestFilter())
 logging.getLogger().addFilter(NoRequestFilter())
 
 
-# In[156]:
+# In[5]:
 
 
 numpy.random.seed(42)
 
 
-# In[91]:
+# In[124]:
 
 
 def find_random_task(selected_tasks):
@@ -99,7 +101,7 @@ def find_random_task(selected_tasks):
                 return task
 
 
-# In[92]:
+# In[125]:
 
 
 LARGE_TASKS = [  3919,   4230,   3601,     30,   3891,   4190,   1792,     43,
@@ -117,7 +119,7 @@ LARGE_TASKS = [  3919,   4230,   3601,     30,   3891,   4190,   1792,     43,
         75138,  10091]
 
 
-# In[93]:
+# In[126]:
 
 
 SMALL_TASKS = [4240, 4245, 1780,  248, 1896, 3891, 3934, 3611, 3837, 3763, 1784,
@@ -131,22 +133,22 @@ SMALL_TASKS = [4240, 4245, 1780,  248, 1896, 3891, 3934, 3611, 3837, 3763, 1784,
        3777, 4243, 3828, 3733, 3056, 3583, 4225, 3695, 4198, 3617,  261]
 
 
-# In[94]:
+# In[149]:
 
 
-DEBUG_TASKS = [4240, 4245]
+DEBUG_TASKS = [4240, 4245, 1780]
 
 
-# In[120]:
+# In[165]:
 
 
 if random_tasks > 0:
     TASKS = random_tasks
 else:
-    TASKS = list(set(LARGE_TASKS+SMALL_TASKS))
+    TASKS = SMALL_TASKS
 
 
-# In[96]:
+# In[166]:
 
 
 def load_openml_task(task_id=None, selected_tasks=[]):
@@ -196,7 +198,7 @@ def load_openml_task(task_id=None, selected_tasks=[]):
                 raise e
 
 
-# In[178]:
+# In[14]:
 
 
 MODELS = {
@@ -204,7 +206,7 @@ MODELS = {
 }
 
 
-# In[98]:
+# In[155]:
 
 
 def fit_and_predict(model_id, Xt, yt, Xv, yv):
@@ -219,7 +221,7 @@ def fit_and_predict(model_id, Xt, yt, Xv, yv):
     return y_probs, y_preds, yv
 
 
-# In[99]:
+# In[156]:
 
 
 def get_cv_metrics_for_model_and_task(model_id, task_id, pool, selected_tasks):
@@ -247,12 +249,12 @@ def get_cv_metrics_for_model_and_task(model_id, task_id, pool, selected_tasks):
     return row, promises
 
 
-# In[5]:
+# In[157]:
 
 
 with multiprocessing.Pool(processes=n_procs) as pool:
 
-    start_at = 162
+    start_at = 0
 
     output_file = f"metrics_{int(time.time())}.dat"
     logging.info(f"Output to {output_file}")
@@ -286,32 +288,37 @@ with multiprocessing.Pool(processes=n_procs) as pool:
                 for x in promise:
                     x = x.get()
                     y_probs.extend(x[0])
-                    y_preds.extend(x[1])
+#                     y_preds.extend(x[1])
                     y_test.extend(x[2])
 
                 # stack fold results and compute metrics
                 y_probs = numpy.array(y_probs)
-                logging.debug(y_probs.shape)
-                y_probs_max = y_probs.max(axis=1)
-                y_preds = numpy.array(y_preds)
+#                 logging.debug(y_probs.shape)
+#                 y_probs_max = y_probs.max(axis=1)
+#                 y_preds = numpy.array(y_preds)
                 y_test = numpy.array(y_test)
 
-                bins = 15
                 row.update({
-                    "accuracy": sklearn.metrics.accuracy_score(y_test, y_preds),
-                    "balanced_accuracy": sklearn.metrics.balanced_accuracy_score(y_test, y_preds),
-                    "f1": sklearn.metrics.f1_score(y_test, y_preds, average="weighted"),
-                    'ece': metrics.ece(y_probs_max, y_preds, y_test, bins=bins),
-                    'ece_balanced': metrics.ece(y_probs_max, y_preds, y_test, balanced=True, bins=bins),
-                    'peace': metrics.peace(y_probs_max, y_preds, y_test, bins=bins),
-                    'class_wise_ece': metrics.class_wise_error(y_probs, y_preds, y_test, metrics.ece, bins=bins),
-                    'class_wise_peace': metrics.class_wise_error(y_probs, y_preds, y_test, metrics.peace, bins=bins)
+                    "y_probs": y_probs,
+                    "y_test": y_test
                 })
+    
+#                 bins = "count"
+#                 row.update({
+#                     "accuracy": sklearn.metrics.accuracy_score(y_test, y_preds),
+#                     "balanced_accuracy": sklearn.metrics.balanced_accuracy_score(y_test, y_preds),
+#                     "f1": sklearn.metrics.f1_score(y_test, y_preds, average="weighted"),
+#                     'ece_count': metrics.ece(y_probs_max, y_preds, y_test, bins=bins),
+#                     'ece_balanced_count': metrics.ece(y_probs_max, y_preds, y_test, balanced=True, bins=bins),
+#                     'peace_count': metrics.peace(y_probs_max, y_preds, y_test, bins=bins),
+#                     'class_wise_ece': metrics.class_wise_error(y_probs, y_preds, y_test, metrics.ece, bins=bins),
+#                     'class_wise_peace': metrics.class_wise_error(y_probs, y_preds, y_test, metrics.peace, bins=bins)
+#                 })
 
                 # update data and dump intermediate dataframe
                 data.append(row)
-                df = pandas.DataFrame(data)
-                dump(df, output_file)
+#                 df = pandas.DataFrame(data)
+                dump(data, output_file)
 
                 logging.info(f"Finished tasks: {i+1}/{len(promises)} ({(i+1)/len(promises)*100:.2f}%)")
             except Exception:
@@ -325,90 +332,209 @@ if not is_notebook():
     exit()
 
 
+# In[6]:
+
+
+def get_longform(df, subject_cols=[]):
+        
+    df = pandas.melt(df, id_vars=subject_cols)
+            
+    if len(subject_cols) > 0:
+        df["subject"] = df[subject_cols].apply(lambda row: '_'.join(row.values.astype(str)), axis=1)
+        
+    return df
+
+
+# In[7]:
+
+
+cols = ["ECE", "Balanced ECE", "PEACE"]
+
+
+# In[8]:
+
+
+data = load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/raw/metrics_1602504941.dat")
+
+def row_func(row, n_bins, eq_count=False):
+    
+    y_probs = row["y_probs"]
+    y_probs_max = y_probs.max(axis=1)
+    y_preds = y_probs.argmax(axis=1)
+    y_test = row["y_test"]
+    
+    row.update({
+        "n_bins": n_bins,
+        "binning": "equal-count" if eq_count else "equal-width",
+        "accuracy": sklearn.metrics.accuracy_score(y_test, y_preds),
+        "balanced_accuracy": sklearn.metrics.balanced_accuracy_score(y_test, y_preds),
+        "f1": sklearn.metrics.f1_score(y_test, y_preds, average="weighted"),
+    })
+    
+    if eq_count:
+        try:
+            row.update({
+                'ece': metrics.ece(y_probs_max, y_preds, y_test, bins="count", n_bins=n_bins),
+                'ece_balanced': metrics.ece(y_probs_max, y_preds, y_test, balanced=True, bins="count", n_bins=n_bins),
+                'peace': metrics.peace(y_probs_max, y_preds, y_test, bins="count", n_bins=n_bins)
+            })
+        except AssertionError:
+            row.update({
+                'ece': np.nan,
+                'ece_balanced': np.nan,
+                'peace': np.nan
+            })
+    else:
+        row.update({
+            'ece': metrics.ece(y_probs_max, y_preds, y_test, bins=n_bins),
+            'ece_balanced': metrics.ece(y_probs_max, y_preds, y_test, balanced=True, bins=n_bins),
+            'peace': metrics.peace(y_probs_max, y_preds, y_test, bins=n_bins)
+        })
+    
+    del row["y_probs"]
+    del row["y_test"]
+    
+    return row
+
+
 # In[157]:
 
 
-tmp_df = load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601995877.dat")
+tmp_df = load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601995877.dat") # bagged classifiers
 tmp_df["model_id"] = "bagged_" + tmp_df["model_id"]
 
 
-# In[158]:
+# In[168]:
+
+
+df = pandas.concat([
+    load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601494658.dat"), # base results
+#     load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1602009416.dat"), # large datasets logreg nb mlp rf
+#     load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1602065288.dat"), # large data adaboost dec
+    load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1602080372.dat"), # partial large + small xgb
+    load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1602142050.dat"), # remaining xgb
+#     load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1602148932.dat"), # large + small ada+nb
+#     load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1602158698.dat"), # large + small ada+perc
+])
+
+
+# In[ ]:
+
+
+df.columns = ["model_id", "task_id", "Accuracy", "Balanced Accuracy", "F1", "ECE", "Balanced ECE", "PEACE", "cw-ECE", "cw-PEACE"]
+cols = ["ECE", "Balanced ECE", "PEACE"]
+
+
+# In[108]:
 
 
 df = pandas.concat([
     load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1601494658.dat"),
-    load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1602009416.dat"),
-    load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1602065288.dat"),
-    load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1602080372.dat"),
-])
+    load("/home/maximl/Data/Experiment_data/results/riverrel/datasets/random_openml/metrics_1602238194.dat")[["ece_count", "ece_balanced_count", "peace_count"]] # equal-count binning
+], axis=1)
+df.columns = ["model_id", "task_id", "Accuracy", "Balanced Accuracy", "F1", "ECE", "Balanced ECE", "PEACE", "cw-ECE", "cw-PEACE", "ECE (c)", "Balanced ECE (c)", "PEACE (c)"]
+cols = ["ECE", "Balanced ECE", "PEACE", "ECE (c)", "Balanced ECE (c)", "PEACE (c)"]
 
 
-# In[159]:
+# In[64]:
 
 
-df.columns = ["model_id", "task_id", "Accuracy", "Balanced Accuracy", "F1", "ECE", "Balanced ECE", "PEACE", "cw-ECE", "cw-PEACE"]
+df = df[~df.duplicated(["model_id", "task_id"])]
 
 
-# In[160]:
+# In[65]:
 
 
-def get_longform(df, cols=None, subject_cols=None):
-    dfs = []
-    
-    if cols is None:
-        cols = df.columns
-    
-    for col in cols:
-        tmp_df = pandas.DataFrame(dict(        
-            value=df[col], 
-            metric=col,   
-        ))
-        for col2 in set(df.columns) - set(cols):
-            tmp_df[col2] = df[col2]
-            
-        if subject_cols is not None:
-            tmp_df["subject"] = df[subject_cols].apply(lambda row: '_'.join(row.values.astype(str)), axis=1)
-            
-        dfs.append(tmp_df)
-        
-    return pandas.concat(dfs)
+for idx, group_df in df.groupby("model_id"):
+    a = sum([(t == group_df["task_id"]).any() for t in LARGE_TASKS])
+    b = sum([(t == group_df["task_id"]).any() for t in SMALL_TASKS])
+    print(idx, a, b)
 
 
-# In[161]:
+# In[66]:
 
 
-long_df = get_longform(df, df.columns[2:], ["model_id", "task_id"])
+all_tasks = set(SMALL_TASKS + LARGE_TASKS)
+for idx, group_df in df.groupby("model_id"):
+    all_tasks = all_tasks.intersection(group_df["task_id"])
 
 
-# In[162]:
+# In[67]:
 
 
-long_df.shape
+df = df[df["task_id"].isin(all_tasks)]
 
 
-# In[163]:
+# In[173]:
 
 
+long_df = get_longform(df, ["model_id", "task_id"])
+
+
+# In[9]:
+
+
+dfs = []
+with multiprocessing.Pool(processes=multiprocessing.cpu_count()) as pool:
+    for bins in tqdm(numpy.arange(5, 100, 5)):
+        dfs.append(pandas.DataFrame(pool.map(partial(row_func, n_bins=bins), data)))
+        dfs.append(pandas.DataFrame(pool.map(partial(row_func, n_bins=bins, eq_count=True), data)))
+
+
+# In[10]:
+
+
+df = pandas.concat(dfs)
+melted_df = pandas.melt(df, id_vars=["model_id", "task_id", "n_bins", "binning"], value_vars=["peace", "ece", "ece_balanced"])
+
+
+# In[11]:
+
+
+grid = seaborn.FacetGrid(data=melted_df, col="model_id", row="binning", hue="variable", margin_titles=True)
+grid.map_dataframe(seaborn.lineplot, x="n_bins", y="value")
+grid.add_legend()
+
+
+# In[12]:
+
+
+grid = seaborn.FacetGrid(data=melted_df, col="model_id", hue="binning", row="variable", margin_titles=True)
+grid.map_dataframe(seaborn.lineplot, x="n_bins", y="value")
+grid.add_legend()
+
+
+# In[26]:
+
+
+df.columns = ["model_id", "task_id", "n_bins", "binning", "Accuracy", "Balanced Accuracy", "F1", "ECE", "Balanced ECE", "PEACE"]
+df.head()
+
+
+# In[43]:
+
+
+df = df[(df["binning"] == "equal-count") & (df["n_bins"] == 25)].drop(columns=["binning", "n_bins"])
+
+
+# In[54]:
+
+
+long_df = get_longform(df, subject_cols=["model_id", "task_id"])
 long_df.head()
 
 
-# In[164]:
-
-
-seaborn.set_theme("paper", "whitegrid", font_scale=1.5)
-
-
-# In[167]:
+# In[45]:
 
 
 fig, ax = plt.subplots(figsize=(10, 6))
 seaborn.boxplot(
-    data=long_df[long_df["metric"].isin(["Accuracy", "Balanced Accuracy", "F1"])], 
-    x="model_id", y="value", hue="metric", saturation=.7, ax=ax
+    data=long_df[long_df["variable"].isin(["Accuracy", "Balanced Accuracy", "F1"])], 
+    x="model_id", y="value", hue="variable", saturation=.7, ax=ax
 )
 seaborn.stripplot(
-    data=long_df[long_df["metric"].isin(["Accuracy", "Balanced Accuracy", "F1"])], 
-    x="model_id", y="value", hue="metric", dodge=True, color=".25", s=3, alpha=.8, ax=ax
+    data=long_df[long_df["variable"].isin(["Accuracy", "Balanced Accuracy", "F1"])], 
+    x="model_id", y="value", hue="variable", dodge=True, color=".25", s=3, alpha=.8, ax=ax
 )
 handles, labels = ax.get_legend_handles_labels()
 ax.set_xlabel("Model")
@@ -420,156 +546,98 @@ ax.set_xticklabels(
 
 plt.legend(handles[:3], labels[:3], bbox_to_anchor=(0., 1.02, 1., .102), loc='lower right',
            ncol=3, borderaxespad=0.)
-plt.savefig("performance.pdf", bbox_inches="tight")
+plt.savefig("plots/performance.pdf", bbox_inches="tight")
 
 
-# In[168]:
-
-
-cols = ["ECE", "Balanced ECE", "PEACE"]
-
-
-# In[169]:
-
-
-seaborn.displot(data=long_df[long_df["metric"].isin(cols)], x="value", hue="metric", rug=True, kind="kde")
-
-
-# In[170]:
-
-
-g = seaborn.violinplot(data=long_df[long_df["metric"].isin(cols)], y="value", x="metric")
-seaborn.stripplot(data=long_df[long_df["metric"].isin(cols)], x="metric", y="value", color=".25", s=2, alpha=.8)
-g.set_xlabel("")
-g.set_ylabel("Metric value")
-# plt.savefig("metrics.pdf")
-
-
-# In[171]:
-
-
-(df["PEACE"] - df["ECE"]).mean()
-
-
-# In[172]:
+# In[46]:
 
 
 import scipy.stats
 import scikit_posthocs as sp
 
 
-# In[173]:
+# In[47]:
 
 
 df.head()
 
 
-# In[174]:
+# In[48]:
 
 
 def map_stars(p):
     if p < 0.001:
-        return "*"*3
+        return "*"
     elif p < 0.01:
-        return "*"*2
+        return "*"
     elif p < 0.05:
         return "*"
     else:
         return ""
 
 
-# In[175]:
+# In[49]:
+
+
+headers = ["AdaBoost", "DecTree", "LogReg", "MLP", "GNB", "RF", "SVM", "XGBoost"]
+
+
+# In[56]:
 
 
 grid = seaborn.FacetGrid(data=df, col="model_id", col_wrap=4)
 table_data = [["PEACE - ECE"], ["PEACE - Balanced ECE"], ["Balanced ECE - ECE"]]
-for ax, (idx, model_df) in zip(grid.axes, df.groupby("model_id")):    
+for h, ax, (idx, model_df) in zip(headers, grid.axes, df.groupby("model_id")):
+    
+    diffs = [
+        ("PEACE", "ECE"),
+        ("PEACE", "Balanced ECE"),
+        ("Balanced ECE", "ECE"),
+    ]
     
     diff_df = pandas.concat([
-        pandas.DataFrame({"value": model_df["PEACE"] - model_df["ECE"], "diff": "PEACE - ECE"}),
-        pandas.DataFrame({"value": model_df["PEACE"] - model_df["Balanced ECE"], "diff": "PEACE - Balanced ECE"}),
-        pandas.DataFrame({"value": model_df["Balanced ECE"] - model_df["ECE"], "diff": "Balanced ECE - ECE"})
+        pandas.DataFrame({"value": model_df[d1] - model_df[d2], "diff": f"{d1} - {d2}"})
+        for d1, d2 in diffs
     ])
     
     data = model_df.loc[:, cols + ["task_id"]]
-    test = scipy.stats.friedmanchisquare(data.iloc[:, 0], data.iloc[:, 1], data.iloc[:, 2])
+    test = scipy.stats.friedmanchisquare(*data.iloc[:, :len(cols)].values.tolist())
     if test.pvalue < 0.05:
-        
-#         a = sp.posthoc_conover_friedman(data.iloc[:, :3], p_adjust="bonferroni")
         l = get_longform(data.drop(columns=["task_id"]))
-        a = sp.posthoc_wilcoxon(a=l, val_col="value", group_col="metric", p_adjust="holm")
+        a = sp.posthoc_wilcoxon(a=l, val_col="value", group_col="variable", p_adjust="holm")
         
-        colors = [
-            "red" if a["PEACE"]["ECE"] < 0.05 else "grey",
-            "red" if a["PEACE"]["Balanced ECE"] < 0.05 else "grey",
-            "red" if a["Balanced ECE"]["ECE"] < 0.05 else "grey"
-        ]
+        colormap = a.copy()
+        colormap[a < 0.05] = "red"
+        colormap[a >= 0.05] = "grey"
+        colors = [colormap[d1][d2] for d1, d2 in diffs]
     else:
-        colors = ["grey"]*3
+        colors = ["grey"]*len(diffs)
 
     tmp_df = diff_df.groupby("diff").aggregate("mean")
     for i, (col1, col2) in enumerate([["PEACE", "ECE"], ["PEACE", "Balanced ECE"], ["Balanced ECE", "ECE"]]):
-        table_data[i].append("$%+.3f$ %s" % (tmp_df.loc[f"{col1} - {col2}"], map_stars(a[col1][col2])))
+        table_data[i].append("$%+.4f$ %s" % (tmp_df.loc[f"{col1} - {col2}"], map_stars(a[col1][col2])))
     
-    ax.set_title(idx)
-    seaborn.boxplot(data=diff_df, y="diff", x="value", orient="h", ax=ax, palette=seaborn.color_palette(colors))
-    ax.set_xlim(-0.05, 0.05)
+    ax.set_title(h)
+    seaborn.boxplot(data=diff_df, y="diff", x="value", orient="h", ax=ax, palette=seaborn.color_palette(colors), fliersize=1.5)
+#     seaborn.stripplot(data=diff_df, y="diff", x="value", orient="h", ax=ax, size=3, palette=seaborn.color_palette(colors))#, fliersize=1.5)
 
 grid.set_axis_labels("Difference", "Comparison")
-plt.savefig("pairwise_comparisons.pdf", bbox_inches="tight")
+plt.savefig("plots/pairwise_comparisons.pdf", bbox_inches="tight")
 
 
-# In[ ]:
+# In[101]:
 
 
-grid = seaborn.FacetGrid(data=df1, col="model_id", col_wrap=4)
-table_data = [["PEACE - ECE"], ["PEACE - Balanced ECE"], ["Balanced ECE - ECE"]]
-for ax, (idx, model_df) in zip(grid.axes, df1.groupby("model_id")):    
-    
-    diff_df = pandas.concat([
-        pandas.DataFrame({"value": model_df["PEACE"] - model_df["ECE"], "diff": "PEACE - ECE"}),
-        pandas.DataFrame({"value": model_df["PEACE"] - model_df["Balanced ECE"], "diff": "PEACE - Balanced ECE"}),
-        pandas.DataFrame({"value": model_df["Balanced ECE"] - model_df["ECE"], "diff": "Balanced ECE - ECE"})
-    ])
-    
-    data = model_df.loc[:, cols + ["task_id"]]
-    test = scipy.stats.friedmanchisquare(data.iloc[:, 0], data.iloc[:, 1], data.iloc[:, 2])
-    if test.pvalue < 0.05:
-        a = sp.posthoc_conover_friedman(data.iloc[:, :3], p_adjust="bonferroni")
-        colors = [
-            "red" if a["PEACE"]["ECE"] < 0.05 else "grey",
-            "red" if a["PEACE"]["Balanced ECE"] < 0.05 else "grey",
-            "red" if a["Balanced ECE"]["ECE"] < 0.05 else "grey"
-        ]
-    else:
-        colors = ["grey"]*3
-
-    tmp_df = diff_df.groupby("diff").aggregate("mean")
-    for i, (col1, col2) in enumerate([["PEACE", "ECE"], ["PEACE", "Balanced ECE"], ["Balanced ECE", "ECE"]]):
-        table_data[i].append("$%+.3f$ %s" % (tmp_df.loc[f"{col1} - {col2}"], map_stars(a[col1][col2])))
-    
-    ax.set_title(idx)
-    seaborn.boxplot(data=diff_df, y="diff", x="value", orient="h", ax=ax, palette=seaborn.color_palette(colors))
-    ax.set_xlim(-0.05, 0.05)
-
-grid.set_axis_labels("Difference", "Comparison")
-plt.savefig("pairwise_comparisons.pdf", bbox_inches="tight")
-
-
-# In[ ]:
-
-
-headers = ["AdaBoost", "DecTree", "LogReg", "MLP", "GNB", "RF", "SVM"]
 print(tabulate.tabulate(table_data, headers=headers, tablefmt="latex").replace("\\$", "$"))
 
 
-# In[ ]:
+# In[82]:
 
 
 seaborn.catplot(data=long_df[long_df["metric"].isin(cols)], x="metric", y="value", col="model_id", kind="violin")
 
 
-# In[ ]:
+# In[102]:
 
 
 def get_task_meta(task_id):
@@ -588,21 +656,21 @@ def get_task_meta(task_id):
     }
 
 
-# In[ ]:
+# In[103]:
 
 
 with multiprocessing.Pool(processes=multiprocessing.cpu_count()) as pool:
     tasks = pool.map(get_task_meta, df["task_id"].unique())
 
 
-# In[ ]:
+# In[104]:
 
 
 tasks = pandas.DataFrame(tasks)
 tasks.head()
 
 
-# In[ ]:
+# In[105]:
 
 
 with open("task_table.tex", "w") as fp:
@@ -612,38 +680,38 @@ with open("task_table.tex", "w") as fp:
         tablefmt="latex"))
 
 
-# In[ ]:
+# In[106]:
 
 
 table = tasks.merge(df, right_on="task_id", left_on="Task ID")
 
 
-# In[ ]:
+# In[107]:
 
 
 tasks["# instances"].describe()
 
 
-# In[ ]:
+# In[108]:
 
 
 table["PEACE-ECE"] = table["PEACE"] - table["ECE"]
 
 
-# In[ ]:
+# In[109]:
 
 
 table["PEACE-balECE"] = table["PEACE"] - table["Balanced ECE"]
 table["PEACE>=balECE"] = table["PEACE"] >= table["Balanced ECE"]
 
 
-# In[ ]:
+# In[110]:
 
 
 selector = table["model_id"] == "mlp"
 
 
-# In[ ]:
+# In[111]:
 
 
 fig, ax = plt.subplots(1, 3, figsize=(10, 4), constrained_layout=True)
@@ -652,29 +720,10 @@ seaborn.regplot(data=table, x="# features", y="PEACE-balECE", ax=ax[1])
 seaborn.regplot(data=table, x="# classes", y="PEACE-balECE", ax=ax[2])
 
 
-# In[ ]:
+# In[123]:
 
 
-import statsmodels.api as sm
-
-
-# In[ ]:
-
-
-X = pandas.concat([pandas.get_dummies(table["Task ID"]), pandas.get_dummies(table["model_id"]), table[["# instances", "# features", "# classes"]]], axis=1)
-
-
-# In[ ]:
-
-
-model = sm.RLM(table["PEACE-balECE"], sm.add_constant(X))
-res = model.fit()
-
-
-# In[ ]:
-
-
-res.summary()
+table[["# instances", "# classes", "# features", "PEACE-balECE", "Task ID"]].groupby("Task ID").aggregate("mean").corr()
 
 
 # In[ ]:
