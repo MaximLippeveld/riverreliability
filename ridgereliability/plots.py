@@ -147,7 +147,7 @@ def river_diagram(distributions:np.array, confidence_levels:np.array, ax:matplot
 
 # Cell
 
-def river_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np.array, ax:matplotlib.axes.Axes=None, bins="fd", ci=[0.90, 0.95, 0.99]):
+def river_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np.array, ax:matplotlib.axes.Axes=None, bins="fd", ci=[0.90, 0.95, 0.99], **bin_args):
     """Plot the posterior balanced accuracy-based reliability diagram.
 
     Arguments:
@@ -165,7 +165,7 @@ def river_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np.arra
     num_classes, ax = _pre_plot_checks(y_probs, y_preds, y_true, ax, ci, required_axes=1)
 
     # bin the probabilities
-    bin_indices, edges = utils.get_bin_indices(y_probs, bins, 0.0, 1.0, return_edges=True)
+    bin_indices, edges = utils.get_bin_indices(y_probs, bins, 0.0, 1.0, return_edges=True, **bin_args)
     unique_bin_indices = sorted(np.unique(bin_indices))
 
     confidence_levels = np.empty((len(unique_bin_indices),), dtype=np.float32) # store mean confidence
@@ -210,7 +210,7 @@ def river_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np.arra
 
 # Cell
 
-def class_wise_river_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np.array, axes:matplotlib.axes.Axes=None, bins="fd", metric=None, show_k_least_calibrated:int=None, ci=[0.90, 0.95, 0.99]):
+def class_wise_river_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np.array, axes:matplotlib.axes.Axes=None, bins="fd", metric=None, show_k_least_calibrated:int=None, ci=[0.90, 0.95, 0.99], **bin_args):
     """Plot the class-wise posterior balanced accuracy-based reliability diagram.
 
     Arguments:
@@ -289,7 +289,7 @@ def bar_diagram(edges:np.array, bin_accuracies:np.array, bin_confidences:np.arra
 
 # Cell
 
-def confidence_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np.array, ax:matplotlib.axes.Axes=None, bins="fd", balanced:bool=True):
+def confidence_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np.array, ax:matplotlib.axes.Axes=None, bins="fd", balanced:bool=True, **bin_args):
     """Plot a confidence reliability diagram.
 
     Arguments:
@@ -303,7 +303,7 @@ def confidence_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np
 
     num_classes, ax = _pre_plot_checks(y_probs, y_preds, y_true, ax, required_axes=1)
 
-    bin_indices, edges = utils.get_bin_indices(y_probs, bins, 0.0, 1.0, return_edges=True)
+    bin_indices, edges = utils.get_bin_indices(y_probs, bins, 0.0, 1.0, return_edges=True, **bin_args)
     unique_bin_indices = sorted(np.unique(bin_indices))
 
     mean_confidences = np.full((len(edges)-1,), dtype=np.float32, fill_value=np.nan)
@@ -324,7 +324,7 @@ def confidence_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np
 
 # Cell
 
-def class_wise_confidence_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np.array, axes:matplotlib.axes.Axes, bins="fd"):
+def class_wise_confidence_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np.array, axes:matplotlib.axes.Axes, bins="fd", **bin_args):
     """Plot a class-wise confidence reliability diagram.
 
     Arguments:
@@ -343,4 +343,4 @@ def class_wise_confidence_reliability_diagram(y_probs:np.array, y_preds:np.array
 
         selector = y_preds == c
 
-        confidence_reliability_diagram(y_probs[selector, c], y_preds[selector], y_true[selector], ax, bins, balanced=False)
+        confidence_reliability_diagram(y_probs[selector, c], y_preds[selector], y_true[selector], ax, bins, balanced=False, **bin_args)
