@@ -52,7 +52,7 @@ description: "This module defines several utility functions. Mainly binning-rela
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="get_bin_indices" class="doc_header"><code>get_bin_indices</code><a href="https://github.com/MaximLippeveld/ridgereliability/tree/master/ridgereliability/utils.py#L15" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>get_bin_indices</code>(<strong><code>y_probs</code></strong>:<code>array</code>, <strong><code>bins</code></strong>=<em><code>'fd'</code></em>, <strong><code>lower</code></strong>:<code>float</code>=<em><code>None</code></em>, <strong><code>upper</code></strong>:<code>float</code>=<em><code>None</code></em>, <strong><code>return_edges</code></strong>:<code>bool</code>=<em><code>False</code></em>, <strong><code>n_bins</code></strong>:<code>int</code>=<em><code>15</code></em>)</p>
+<h4 id="get_bin_indices" class="doc_header"><code>get_bin_indices</code><a href="https://github.com/MaximLippeveld/riverreliability/tree/master/riverreliability/utils.py#L12" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>get_bin_indices</code>(<strong><code>y_probs</code></strong>:<code>array</code>, <strong><code>bins</code></strong>=<em><code>'fd'</code></em>, <strong><code>lower</code></strong>:<code>float</code>=<em><code>None</code></em>, <strong><code>upper</code></strong>:<code>float</code>=<em><code>None</code></em>, <strong><code>return_edges</code></strong>:<code>bool</code>=<em><code>False</code></em>, <strong><code>n_bins</code></strong>:<code>int</code>=<em><code>15</code></em>)</p>
 </blockquote>
 <p>Compute a function across.</p>
 <p>Parameters:
@@ -87,7 +87,7 @@ edges (np.array) -- Bin edges if return_edges is True</p>
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="binning" class="doc_header"><code>binning</code><a href="https://github.com/MaximLippeveld/ridgereliability/tree/master/ridgereliability/utils.py#L68" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>binning</code>(<strong><code>y_probs</code></strong>:<code>array</code>, <strong><code>y_preds</code></strong>:<code>array</code>, <strong><code>y_true</code></strong>:<code>array</code>, <strong><code>bin_indices</code></strong>:<code>array</code>, <strong><code>bin_func</code></strong>:<code>Callable</code>)</p>
+<h4 id="binning" class="doc_header"><code>binning</code><a href="https://github.com/MaximLippeveld/riverreliability/tree/master/riverreliability/utils.py#L65" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>binning</code>(<strong><code>y_probs</code></strong>:<code>array</code>, <strong><code>y_preds</code></strong>:<code>array</code>, <strong><code>y_true</code></strong>:<code>array</code>, <strong><code>bin_indices</code></strong>:<code>array</code>, <strong><code>bin_func</code></strong>:<code>Callable</code>)</p>
 </blockquote>
 <p>Compute a function across bins of confidence levels.</p>
 <p>Parameters:

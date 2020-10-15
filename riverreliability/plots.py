@@ -5,11 +5,11 @@ __all__ = ['river_reliability_diagram', 'class_wise_river_reliability_diagram', 
 
 # Cell
 
-from ridgereliability import utils, metrics as rmetrics
+from riverreliability import utils, metrics as rmetrics
 
 import matplotlib.pyplot as plt
 import matplotlib.axes
-from matplotlib import gridspec, cm
+from matplotlib import cm
 
 import numpy as np
 from scipy.stats import beta
@@ -20,7 +20,6 @@ import sklearn.datasets
 import sklearn.model_selection
 import sklearn.svm
 from sklearn.metrics import confusion_matrix, accuracy_score, balanced_accuracy_score
-from sklearn.preprocessing import label_binarize
 import sklearn.utils
 
 # Internal Cell
@@ -206,7 +205,6 @@ def river_reliability_diagram(y_probs:np.array, y_preds:np.array, y_true:np.arra
     river_diagram(distributions, confidence_levels, ax, ci=ci)
 
     return ax
-
 
 # Cell
 

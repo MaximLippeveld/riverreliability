@@ -1,6 +1,6 @@
 ---
 
-title: Ridge reliability
+title: River reliability
 
 keywords: fastai
 sidebar: home_sidebar
@@ -36,7 +36,7 @@ sidebar: home_sidebar
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
 <p>Install the package with:</p>
-<p><code>pip install ridgereliability</code></p>
+<p><code>pip install riverreliability</code></p>
 
 </div>
 </div>
@@ -171,9 +171,9 @@ Balanced accuracy: 0.8084048918146675
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">ax</span> <span class="o">=</span> <span class="n">ridgereliability</span><span class="o">.</span><span class="n">plots</span><span class="o">.</span><span class="n">river_reliability_diagram</span><span class="p">(</span><span class="n">y_probs</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">y_probs</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">y_test</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="s2">&quot;fd&quot;</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">ax</span> <span class="o">=</span> <span class="n">riverreliability</span><span class="o">.</span><span class="n">plots</span><span class="o">.</span><span class="n">river_reliability_diagram</span><span class="p">(</span><span class="n">y_probs</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">y_probs</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">y_test</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="s2">&quot;fd&quot;</span><span class="p">)</span>
 
-<span class="n">peace_metric</span> <span class="o">=</span> <span class="n">ridgereliability</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">peace</span><span class="p">(</span><span class="n">y_probs</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">y_probs</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">y_test</span><span class="p">)</span>
+<span class="n">peace_metric</span> <span class="o">=</span> <span class="n">riverreliability</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">peace</span><span class="p">(</span><span class="n">y_probs</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">y_probs</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">y_test</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;PEACE: </span><span class="si">{</span><span class="n">peace_metric</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
 <span class="n">_</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
@@ -235,9 +235,9 @@ Balanced accuracy: 0.8084048918146675
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">axes</span> <span class="o">=</span> <span class="n">ridgereliability</span><span class="o">.</span><span class="n">plots</span><span class="o">.</span><span class="n">class_wise_river_reliability_diagram</span><span class="p">(</span><span class="n">y_probs</span><span class="p">,</span> <span class="n">y_probs</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">y_test</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">axes</span> <span class="o">=</span> <span class="n">riverreliability</span><span class="o">.</span><span class="n">plots</span><span class="o">.</span><span class="n">class_wise_river_reliability_diagram</span><span class="p">(</span><span class="n">y_probs</span><span class="p">,</span> <span class="n">y_probs</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">y_test</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
 
-<span class="n">peace_metric</span> <span class="o">=</span> <span class="n">ridgereliability</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">class_wise_error</span><span class="p">(</span><span class="n">y_probs</span><span class="p">,</span> <span class="n">y_probs</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">y_test</span><span class="p">,</span> <span class="n">base_error</span><span class="o">=</span><span class="n">ridgereliability</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">peace</span><span class="p">)</span>
+<span class="n">peace_metric</span> <span class="o">=</span> <span class="n">riverreliability</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">class_wise_error</span><span class="p">(</span><span class="n">y_probs</span><span class="p">,</span> <span class="n">y_probs</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">y_test</span><span class="p">,</span> <span class="n">base_error</span><span class="o">=</span><span class="n">riverreliability</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">peace</span><span class="p">)</span>
 <span class="n">_</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;PEACE: </span><span class="si">{</span><span class="n">peace_metric</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 

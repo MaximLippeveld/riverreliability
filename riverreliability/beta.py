@@ -10,7 +10,6 @@ import numpy as np
 from scipy.stats import beta
 from scipy.integrate import trapz
 from scipy.optimize import brentq
-from pandas import DataFrame
 from sklearn import metrics
 import numpy.fft
 

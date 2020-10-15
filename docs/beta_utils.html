@@ -52,7 +52,7 @@ sidebar: home_sidebar
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="get_beta_parameters" class="doc_header"><code>get_beta_parameters</code><a href="https://github.com/MaximLippeveld/ridgereliability/tree/master/ridgereliability/beta.py#L19" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>get_beta_parameters</code>(<strong><code>confusion</code></strong>)</p>
+<h4 id="get_beta_parameters" class="doc_header"><code>get_beta_parameters</code><a href="https://github.com/MaximLippeveld/riverreliability/tree/master/riverreliability/beta.py#L18" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>get_beta_parameters</code>(<strong><code>confusion</code></strong>)</p>
 </blockquote>
 <p>Extract the beta parameters from a confusion matrix.</p>
 <h2 id="Parameters">Parameters<a class="anchor-link" href="#Parameters"> </a></h2><p>confusion : array, shape = [n_classes, n<em>classes]
@@ -83,7 +83,7 @@ sidebar: home_sidebar
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="convolve_betas_fft" class="doc_header"><code>convolve_betas_fft</code><a href="https://github.com/MaximLippeveld/ridgereliability/tree/master/ridgereliability/beta.py#L50" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>convolve_betas_fft</code>(<strong><code>parameters</code></strong>, <strong><code>res</code></strong>=<em><code>0.001</code></em>)</p>
+<h4 id="convolve_betas_fft" class="doc_header"><code>convolve_betas_fft</code><a href="https://github.com/MaximLippeveld/riverreliability/tree/master/riverreliability/beta.py#L49" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>convolve_betas_fft</code>(<strong><code>parameters</code></strong>, <strong><code>res</code></strong>=<em><code>0.001</code></em>)</p>
 </blockquote>
 <p>Convolve a list of 1d float arrays together, using FFTs.
 The arrays need not have the same length, but each array should
@@ -110,7 +110,7 @@ have length at least 1.</p>
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="convolve_betas" class="doc_header"><code>convolve_betas</code><a href="https://github.com/MaximLippeveld/ridgereliability/tree/master/ridgereliability/beta.py#L86" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>convolve_betas</code>(<strong><code>parameters</code></strong>, <strong><code>res</code></strong>=<em><code>0.001</code></em>)</p>
+<h4 id="convolve_betas" class="doc_header"><code>convolve_betas</code><a href="https://github.com/MaximLippeveld/riverreliability/tree/master/riverreliability/beta.py#L85" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>convolve_betas</code>(<strong><code>parameters</code></strong>, <strong><code>res</code></strong>=<em><code>0.001</code></em>)</p>
 </blockquote>
 <p>Convolves k Beta distributions.</p>
 <h2 id="Parameters">Parameters<a class="anchor-link" href="#Parameters"> </a></h2><p>parameters : array of tuples
@@ -143,7 +143,7 @@ have length at least 1.</p>
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="balanced_accuracy_expected" class="doc_header"><code>balanced_accuracy_expected</code><a href="https://github.com/MaximLippeveld/ridgereliability/tree/master/ridgereliability/beta.py#L130" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>balanced_accuracy_expected</code>(<strong><code>confusion</code></strong>, <strong><code>fft</code></strong>=<em><code>False</code></em>)</p>
+<h4 id="balanced_accuracy_expected" class="doc_header"><code>balanced_accuracy_expected</code><a href="https://github.com/MaximLippeveld/riverreliability/tree/master/riverreliability/beta.py#L129" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>balanced_accuracy_expected</code>(<strong><code>confusion</code></strong>, <strong><code>fft</code></strong>=<em><code>False</code></em>)</p>
 </blockquote>
 <p>Compute the expected value of the posterior balanced accuracy.</p>
 <h2 id="Parameters">Parameters<a class="anchor-link" href="#Parameters"> </a></h2><p>confusion : array, shape = [n_classes, n<em>classes]
@@ -174,7 +174,7 @@ fft: bool
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="beta_sum_pdf" class="doc_header"><code>beta_sum_pdf</code><a href="https://github.com/MaximLippeveld/ridgereliability/tree/master/ridgereliability/beta.py#L166" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>beta_sum_pdf</code>(<strong><code>x</code></strong>, <strong><code>parameters</code></strong>, <strong><code>res</code></strong>=<em><code>0.001</code></em>, <strong><code>fft</code></strong>=<em><code>False</code></em>)</p>
+<h4 id="beta_sum_pdf" class="doc_header"><code>beta_sum_pdf</code><a href="https://github.com/MaximLippeveld/riverreliability/tree/master/riverreliability/beta.py#L165" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>beta_sum_pdf</code>(<strong><code>x</code></strong>, <strong><code>parameters</code></strong>, <strong><code>res</code></strong>=<em><code>0.001</code></em>, <strong><code>fft</code></strong>=<em><code>False</code></em>)</p>
 </blockquote>
 <p>Compute the pdf of the sum of beta distributions.</p>
 <h2 id="Parameters">Parameters<a class="anchor-link" href="#Parameters"> </a></h2><p>x : array
@@ -208,7 +208,7 @@ fft: bool
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="beta_avg_pdf" class="doc_header"><code>beta_avg_pdf</code><a href="https://github.com/MaximLippeveld/ridgereliability/tree/master/ridgereliability/beta.py#L213" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>beta_avg_pdf</code>(<strong><code>x</code></strong>, <strong><code>parameters</code></strong>, <strong><code>res</code></strong>=<em><code>0.001</code></em>, <strong><code>fft</code></strong>=<em><code>False</code></em>)</p>
+<h4 id="beta_avg_pdf" class="doc_header"><code>beta_avg_pdf</code><a href="https://github.com/MaximLippeveld/riverreliability/tree/master/riverreliability/beta.py#L212" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>beta_avg_pdf</code>(<strong><code>x</code></strong>, <strong><code>parameters</code></strong>, <strong><code>res</code></strong>=<em><code>0.001</code></em>, <strong><code>fft</code></strong>=<em><code>False</code></em>)</p>
 </blockquote>
 <p>Compute the pdf of the average of the k beta distributions.</p>
 <h2 id="Parameters">Parameters<a class="anchor-link" href="#Parameters"> </a></h2><p>x : array
@@ -242,7 +242,7 @@ fft: bool
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="beta_sum_cdf" class="doc_header"><code>beta_sum_cdf</code><a href="https://github.com/MaximLippeveld/ridgereliability/tree/master/ridgereliability/beta.py#L241" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>beta_sum_cdf</code>(<strong><code>x</code></strong>, <strong><code>parameters</code></strong>, <strong><code>res</code></strong>=<em><code>0.001</code></em>)</p>
+<h4 id="beta_sum_cdf" class="doc_header"><code>beta_sum_cdf</code><a href="https://github.com/MaximLippeveld/riverreliability/tree/master/riverreliability/beta.py#L240" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>beta_sum_cdf</code>(<strong><code>x</code></strong>, <strong><code>parameters</code></strong>, <strong><code>res</code></strong>=<em><code>0.001</code></em>)</p>
 </blockquote>
 <p>Compute the cdf of the sum of the k beta distributions.</p>
 <h2 id="Parameters">Parameters<a class="anchor-link" href="#Parameters"> </a></h2><p>x : array
@@ -276,7 +276,7 @@ fft: bool
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="beta_avg_cdf" class="doc_header"><code>beta_avg_cdf</code><a href="https://github.com/MaximLippeveld/ridgereliability/tree/master/ridgereliability/beta.py#L277" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>beta_avg_cdf</code>(<strong><code>x</code></strong>, <strong><code>parameters</code></strong>, <strong><code>res</code></strong>=<em><code>0.001</code></em>)</p>
+<h4 id="beta_avg_cdf" class="doc_header"><code>beta_avg_cdf</code><a href="https://github.com/MaximLippeveld/riverreliability/tree/master/riverreliability/beta.py#L276" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>beta_avg_cdf</code>(<strong><code>x</code></strong>, <strong><code>parameters</code></strong>, <strong><code>res</code></strong>=<em><code>0.001</code></em>)</p>
 </blockquote>
 <p>Compute the cdf of the average of the k beta distributions.</p>
 <h2 id="Parameters">Parameters<a class="anchor-link" href="#Parameters"> </a></h2><p>x : array
@@ -310,7 +310,7 @@ fft: bool
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="beta_avg_inv_cdf" class="doc_header"><code>beta_avg_inv_cdf</code><a href="https://github.com/MaximLippeveld/ridgereliability/tree/master/ridgereliability/beta.py#L305" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>beta_avg_inv_cdf</code>(<strong><code>y</code></strong>, <strong><code>parameters</code></strong>, <strong><code>res</code></strong>=<em><code>0.001</code></em>)</p>
+<h4 id="beta_avg_inv_cdf" class="doc_header"><code>beta_avg_inv_cdf</code><a href="https://github.com/MaximLippeveld/riverreliability/tree/master/riverreliability/beta.py#L304" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>beta_avg_inv_cdf</code>(<strong><code>y</code></strong>, <strong><code>parameters</code></strong>, <strong><code>res</code></strong>=<em><code>0.001</code></em>)</p>
 </blockquote>
 <p>Compute the inverse cdf of the average of the k beta distributions.</p>
 <h2 id="Parameters">Parameters<a class="anchor-link" href="#Parameters"> </a></h2><p>y : float
@@ -344,7 +344,7 @@ fft: bool
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="recall" class="doc_header"><code>recall</code><a href="https://github.com/MaximLippeveld/ridgereliability/tree/master/ridgereliability/beta.py#L329" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>recall</code>(<strong><code>confusion</code></strong>)</p>
+<h4 id="recall" class="doc_header"><code>recall</code><a href="https://github.com/MaximLippeveld/riverreliability/tree/master/riverreliability/beta.py#L328" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>recall</code>(<strong><code>confusion</code></strong>)</p>
 </blockquote>
 <p>Compute the recall from a confusion matrix.</p>
 <h2 id="Parameters">Parameters<a class="anchor-link" href="#Parameters"> </a></h2><p>confusion : array, shape = [n_classes, n<em>classes]
@@ -374,7 +374,7 @@ fft: bool
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="precision" class="doc_header"><code>precision</code><a href="https://github.com/MaximLippeveld/ridgereliability/tree/master/ridgereliability/beta.py#L355" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>precision</code>(<strong><code>confusion</code></strong>, <strong><code>classes</code></strong>, <strong><code>classifiers</code></strong>)</p>
+<h4 id="precision" class="doc_header"><code>precision</code><a href="https://github.com/MaximLippeveld/riverreliability/tree/master/riverreliability/beta.py#L354" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>precision</code>(<strong><code>confusion</code></strong>, <strong><code>classes</code></strong>, <strong><code>classifiers</code></strong>)</p>
 </blockquote>
 <p>Compute the precision from a confusion matrix.</p>
 <h2 id="Parameters">Parameters<a class="anchor-link" href="#Parameters"> </a></h2><p>confusion : array, shape = [n_classes, n<em>classes]
@@ -404,7 +404,7 @@ fft: bool
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="mpba_score" class="doc_header"><code>mpba_score</code><a href="https://github.com/MaximLippeveld/ridgereliability/tree/master/ridgereliability/beta.py#L381" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>mpba_score</code>(<strong><code>y_true</code></strong>, <strong><code>y_pred</code></strong>)</p>
+<h4 id="mpba_score" class="doc_header"><code>mpba_score</code><a href="https://github.com/MaximLippeveld/riverreliability/tree/master/riverreliability/beta.py#L380" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>mpba_score</code>(<strong><code>y_true</code></strong>, <strong><code>y_pred</code></strong>)</p>
 </blockquote>
 <p>Compute the MPBA score of a classifier based on some test set.</p>
 <h2 id="Parameters">Parameters<a class="anchor-link" href="#Parameters"> </a></h2><p>y_true : array
@@ -435,7 +435,7 @@ fft: bool
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="micro_f1_score" class="doc_header"><code>micro_f1_score</code><a href="https://github.com/MaximLippeveld/ridgereliability/tree/master/ridgereliability/beta.py#L403" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>micro_f1_score</code>(<strong><code>y_true</code></strong>, <strong><code>y_pred</code></strong>, <strong><code>n_classes</code></strong>=<em><code>None</code></em>)</p>
+<h4 id="micro_f1_score" class="doc_header"><code>micro_f1_score</code><a href="https://github.com/MaximLippeveld/riverreliability/tree/master/riverreliability/beta.py#L402" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>micro_f1_score</code>(<strong><code>y_true</code></strong>, <strong><code>y_pred</code></strong>, <strong><code>n_classes</code></strong>=<em><code>None</code></em>)</p>
 </blockquote>
 <p>Compute the Micro-F1 score of a classifier based on some test set.</p>
 <h2 id="Parameters">Parameters<a class="anchor-link" href="#Parameters"> </a></h2><p>y_true : array

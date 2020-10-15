@@ -4,13 +4,13 @@ __all__ = ['peace', 'ece', 'ece_v2', 'class_wise_error']
 
 # Cell
 
-from ridgereliability import utils
+from riverreliability import utils
 
 import numpy as np
 import scipy.stats
 import scipy.integrate
 
-import ridgereliability.beta
+import riverreliability.beta
 import sklearn.metrics
 import sklearn.datasets
 import sklearn.model_selection
@@ -46,8 +46,8 @@ def peace(y_probs, y_preds, y_true, samples=1000, bins="fd", **bin_args):
         if len(np.unique(y_preds_bin)) > 1:
             # estimate beta parameters
             confusion = sklearn.metrics.confusion_matrix(y_true_bin, y_preds_bin, labels=classes)
-            params = ridgereliability.beta.get_beta_parameters(confusion)
-            ys = abs(xs - conf) * ridgereliability.beta.beta_avg_pdf(xs, params, fft=True)
+            params = riverreliability.beta.get_beta_parameters(confusion)
+            ys = abs(xs - conf) * riverreliability.beta.beta_avg_pdf(xs, params, fft=True)
         else:
             params = sum(y_preds_bin == y_true_bin)+1, sum(y_preds_bin != y_true_bin)+1
             ys = abs(xs - conf) * scipy.stats.beta.pdf(xs, params[0], params[1])
@@ -114,7 +114,7 @@ def ece_v2(y_probs, y_preds, y_true, bins="fd", **bin_args):
     # define the bin function
     def bin_func(y_probs_bin, y_preds_bin, y_true_bin):
         confusion = sklearn.metrics.confusion_matrix(y_true_bin, y_preds_bin, labels=classes)
-        acc = ridgereliability.beta.balanced_accuracy_expected(confusion, fft=True)
+        acc = riverreliability.beta.balanced_accuracy_expected(confusion, fft=True)
         conf = y_probs_bin.mean()
         return abs(acc - conf)
 

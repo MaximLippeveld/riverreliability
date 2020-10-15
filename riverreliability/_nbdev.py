@@ -34,8 +34,8 @@ modules = ["beta.py",
            "plots.py",
            "utils.py"]
 
-doc_url = "https://MaximLippeveld.github.io/ridgereliability/"
+doc_url = "https://MaximLippeveld.github.io/riverreliability/"
 
-git_url = "https://github.com/MaximLippeveld/ridgereliability/tree/master/"
+git_url = "https://github.com/MaximLippeveld/riverreliability/tree/master/"
 
 def custom_doc_links(name): return None

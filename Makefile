@@ -1,10 +1,10 @@
 SRC = $(wildcard notebooks/*.ipynb)
 
-all: ridge_reliability docs
+all: riverreliability docs
 
 ridge_reliability: $(SRC)
 	nbdev_build_lib
-	touch ridge_reliability
+	touch riverreliability
 
 docs_serve: docs
 	cd docs && bundle exec jekyll serve
