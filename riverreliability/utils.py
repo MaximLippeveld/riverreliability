@@ -14,11 +14,12 @@ def get_bin_indices(y_probs:np.array, bins='fd', lower:float=None, upper:float=N
 
     Parameters:
     y_probs -- Predicted class probabilities
-    bins -- Number of bins (see `np.histogram_bin_edges` for options)
+    bins -- Number of bins (see `np.histogram_bin_edges` for options) or 'equal-count' for equal-count binning
     return_edges -- Return the edges used for the binning
     lower -- Lower bound of confidence values
     upper -- Upper bound of confidence values
     return_edges -- Set to return identified edges
+    n_bins -- in case bins is set to 'equal-count' this parameter specifies the number of bins to use
 
     Returns:
     bin_indices (np.array) -- Array that maps instances to bins
@@ -36,7 +37,7 @@ def get_bin_indices(y_probs:np.array, bins='fd', lower:float=None, upper:float=N
     if upper is None:
         upper = y_probs.max()
 
-    if bins == "count":
+    if bins == "equal-count":
 
         if n_bins > len(y_probs):
             n_bins = len(y_probs)

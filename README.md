@@ -10,7 +10,7 @@ Install the package with:
 
 ## How to use
 
-Below we go over some of the functionality of this package.
+Below, we show some basic funtionality of the package. Please look at the notebooks for more examples and documentation.
 
 ```python
 np.random.seed(42)
